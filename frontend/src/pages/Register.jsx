@@ -62,7 +62,7 @@ export function Register() {
 
         {error && <Alert type="error" message={error} />}
 
-        <form onSubmit={handleSubmit}>
+        <form data-cy="register-form" onSubmit={handleSubmit}>
           <Input
             label="Nombre de Usuario"
             type="text"
@@ -70,6 +70,7 @@ export function Register() {
             value={formData.username}
             onChange={handleChange}
             required
+            data-cy="register-username"
           />
 
           <Input
@@ -79,6 +80,7 @@ export function Register() {
             value={formData.email}
             onChange={handleChange}
             required
+            data-cy="register-email"
           />
 
           <Input
@@ -87,6 +89,7 @@ export function Register() {
             name="firstName"
             value={formData.firstName}
             onChange={handleChange}
+            data-cy="register-firstName"
           />
 
           <Input
@@ -95,6 +98,7 @@ export function Register() {
             name="lastName"
             value={formData.lastName}
             onChange={handleChange}
+            data-cy="register-lastName"
           />
 
           <Input
@@ -104,6 +108,7 @@ export function Register() {
             value={formData.password}
             onChange={handleChange}
             required
+            data-cy="register-password"
           />
 
           <Input
@@ -113,6 +118,7 @@ export function Register() {
             value={formData.confirmPassword}
             onChange={handleChange}
             required
+            data-cy="register-confirmPassword"
           />
 
           <Select
@@ -120,6 +126,7 @@ export function Register() {
             name="role"
             value={formData.role}
             onChange={handleChange}
+            data-cy="register-role"
           >
             <option value="resident">Residente</option>
             <option value="syndic">Síndico</option>
@@ -130,6 +137,7 @@ export function Register() {
             type="submit"
             disabled={loading}
             className="w-full mb-4"
+            data-cy="register-submit"
           >
             {loading ? 'Registrando...' : 'Registrarse'}
           </Button>

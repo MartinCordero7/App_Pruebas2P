@@ -46,6 +46,7 @@ export function Login() {
             label="Usuario"
             type="text"
             name="username"
+            data-cy="username"
             value={credentials.username}
             onChange={handleChange}
             placeholder="Tu usuario"
@@ -56,6 +57,7 @@ export function Login() {
             label="Contraseña"
             type="password"
             name="password"
+            data-cy="password"
             value={credentials.password}
             onChange={handleChange}
             placeholder="Tu contraseña"
@@ -66,6 +68,7 @@ export function Login() {
             type="submit"
             disabled={loading}
             className="w-full mb-4"
+            data-cy="login-btn"
           >
             {loading ? 'Ingresando...' : 'Ingresar'}
           </Button>
