@@ -216,6 +216,31 @@ Por defecto, puedes crear nuevas cuentas en el formulario de registro. Los roles
 - [ ] Pagos en línea
 - [ ] Sincronización en tiempo real
 
+## Incidente de Login - Resumen Corto
+
+El login de la web fallaba aunque Swagger, Flutter y la app de escritorio funcionaban. Se descartó que el problema fuera el formulario, las credenciales o el controlador de autenticación.
+
+### Qué se probó
+
+- Login con `fetch` directo.
+- Login usando el cliente HTTP compartido `api`.
+- URL absoluta a Render desde `.env`.
+- Proxy local de Vite.
+- Desbloqueo de `/error` para ver el fallo real.
+
+### Qué falló
+
+- El backend devolvía un `401` enmascarado por Spring Security.
+- Luego apareció el error real de CORS: `allowCredentials(true)` no puede coexistir con `allowedOrigins("*")`.
+- También se confirmó que el `OPTIONS` del navegador necesitaba estar permitido.
+
+### Qué lo solucionó
+
+- Permitir `/error` y `/api/v1/auth/**` en Spring Security.
+- Permitir `OPTIONS`.
+- Cambiar CORS a `allowedOriginPatterns(...)` o a orígenes explícitos.
+- Dejar el frontend usando `/api/v1` y el proxy local de Vite en desarrollo.
+
 ## Licencia
 
 Este proyecto está bajo licencia MIT.

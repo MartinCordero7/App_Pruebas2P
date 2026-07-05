@@ -12,11 +12,23 @@ const authService = {
 
   login: async (credentials) => {
     const response = await api.post('/auth/login', credentials);
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    let data = response.data;
+
+    // Si la respuesta tiene formato ApiResponse, desempaquetarla
+    if (data && data.success === true && data.data) {
+      data = data.data;
     }
-    return response.data;
+
+    if (data && data.accessToken) {
+      localStorage.setItem('token', data.accessToken);
+      const user = {
+        username: data.username,
+        role: data.roles && data.roles.length > 0 ? data.roles[0].replace('ROLE_', '').toLowerCase() : 'resident'
+      };
+      localStorage.setItem('user', JSON.stringify(user));
+      return { success: true, token: data.accessToken, user };
+    }
+    return data;
   },
 
   logout: () => {

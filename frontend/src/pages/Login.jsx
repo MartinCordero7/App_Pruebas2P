@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Button, Input, Alert } from '../components/UI';
@@ -9,6 +9,11 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // ESTO ES CLAVE: Limpiar cualquier token viejo apenas entramos al login
+    localStorage.clear();
+  }, []);
 
   const handleChange = (e) => {
     setCredentials({
@@ -23,10 +28,16 @@ export function Login() {
     setLoading(true);
 
     try {
+      // Nos aseguramos de borrar justo antes de enviar también
+      localStorage.clear();
       await login(credentials);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al iniciar sesión');
+      const debugInfo = err.response 
+        ? `Status: ${err.response.status}, Data: ${JSON.stringify(err.response.data)}`
+        : `Network Error / Proxy issue: ${err.message}`;
+      console.error("Login Error Details:", err);
+      setError(`Fallo Login -> ${debugInfo}`);
     } finally {
       setLoading(false);
     }
