@@ -5,8 +5,22 @@ export async function createUnit(req, res) {
   try {
     const { unitNumber, unitType, floor, area, aliquot, status, ownerId, description } = req.body;
 
-    if (!unitNumber || !unitType || !aliquot) {
-      return res.status(400).json({ error: 'Faltan campos requeridos' });
+    if (!unitNumber || !unitType || aliquot === undefined || aliquot === null || aliquot === '') {
+      return res.status(400).json({ error: 'Faltan campos requeridos (Número, Tipo o Alícuota)' });
+    }
+
+    const numericAliquot = parseFloat(aliquot);
+    if (isNaN(numericAliquot) || numericAliquot < 0) {
+      return res.status(400).json({ error: 'La alícuota debe ser un número positivo' });
+    }
+
+    let parsedArea = null;
+    if (area !== undefined && area !== null && area !== '') {
+      const numericArea = parseFloat(area);
+      if (isNaN(numericArea) || numericArea < 0) {
+        return res.status(400).json({ error: 'El área debe ser un número positivo' });
+      }
+      parsedArea = numericArea;
     }
 
     const db = await getDatabase();
@@ -15,7 +29,7 @@ export async function createUnit(req, res) {
     await db.run(
       `INSERT INTO units (id, unit_number, unit_type, floor, area, aliquot, status, owner_id, description)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [unitId, unitNumber, unitType, floor || null, area || null, aliquot, status || 'ocupado', ownerId || null, description || null]
+      [unitId, unitNumber, unitType, floor || null, parsedArea, numericAliquot, status || 'ocupado', ownerId || null, description || null]
     );
 
     res.status(201).json({ success: true, id: unitId });
@@ -83,14 +97,36 @@ export async function updateUnit(req, res) {
     const { id } = req.params;
     const { unitNumber, unitType, floor, area, aliquot, status, ownerId, renterId, description } = req.body;
 
+    if (!unitNumber || !unitType || aliquot === undefined || aliquot === null || aliquot === '') {
+      return res.status(400).json({ error: 'Faltan campos requeridos (Número, Tipo o Alícuota)' });
+    }
+
+    const numericAliquot = parseFloat(aliquot);
+    if (isNaN(numericAliquot) || numericAliquot < 0) {
+      return res.status(400).json({ error: 'La alícuota debe ser un número positivo' });
+    }
+
+    let parsedArea = null;
+    if (area !== undefined && area !== null && area !== '') {
+      const numericArea = parseFloat(area);
+      if (isNaN(numericArea) || numericArea < 0) {
+        return res.status(400).json({ error: 'El área debe ser un número positivo' });
+      }
+      parsedArea = numericArea;
+    }
+
     const db = await getDatabase();
 
-    await db.run(
+    const result = await db.run(
       `UPDATE units 
        SET unit_number = ?, unit_type = ?, floor = ?, area = ?, aliquot = ?, status = ?, owner_id = ?, renter_id = ?, description = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [unitNumber, unitType, floor, area, aliquot, status, ownerId, renterId, description, id]
+      [unitNumber, unitType, floor, parsedArea, numericAliquot, status, ownerId, renterId, description, id]
     );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Unidad no encontrada' });
+    }
 
     res.json({ success: true, message: 'Unidad actualizada' });
   } catch (error) {

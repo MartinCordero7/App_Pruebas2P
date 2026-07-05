@@ -3,6 +3,7 @@ import { Plus, FileText, Trash2, AlertCircle } from 'lucide-react';
 import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
 import documentsService from '../services/documentsService';
 import residentsService from '../services/residentsService';
+import { validateForm } from '../utils/validation';
 
 export function Documents() {
   const [documents, setDocuments] = useState([]);
@@ -19,6 +20,7 @@ export function Documents() {
     fileName: '',
     expirationDate: ''
   });
+  const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
     loadDocuments();
@@ -60,6 +62,22 @@ export function Documents() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setValidationErrors({});
+
+    const rules = {
+      title: { required: true, minLength: 3 },
+      fileName: { required: true }
+    };
+
+    const errors = validateForm(formData, rules);
+    if (formData.relatedEntityType === 'resident' && !formData.relatedEntityId) {
+      errors.relatedEntityId = 'Debe seleccionar un residente';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
 
     try {
       await documentsService.uploadDocument(formData);
@@ -71,6 +89,7 @@ export function Documents() {
         fileName: '',
         expirationDate: ''
       });
+      setValidationErrors({});
       setShowForm(false);
       loadDocuments();
     } catch (err) {
@@ -145,6 +164,7 @@ export function Documents() {
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="Ej: Cédula de Juan Pérez"
+                error={validationErrors.title}
                 required
               />
               <Select
@@ -166,6 +186,8 @@ export function Documents() {
                 value={formData.fileName}
                 onChange={handleChange}
                 placeholder="documento.pdf"
+                error={validationErrors.fileName}
+                required
               />
               <Input
                 label="Fecha de Vencimiento"
@@ -190,6 +212,8 @@ export function Documents() {
                   name="relatedEntityId"
                   value={formData.relatedEntityId}
                   onChange={handleChange}
+                  error={validationErrors.relatedEntityId}
+                  required
                 >
                   <option value="">Seleccionar...</option>
                   {residents.map((r) => (
@@ -202,7 +226,7 @@ export function Documents() {
             </div>
             <div className="flex gap-2 mt-4">
               <Button type="submit">Guardar</Button>
-              <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
+              <Button type="button" variant="secondary" onClick={() => { setShowForm(false); setValidationErrors({}); }}>
                 Cancelar
               </Button>
             </div>

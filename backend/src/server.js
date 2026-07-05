@@ -12,6 +12,7 @@ import suppliersRoutes from './routes/suppliersRoutes.js';
 import communicationsRoutes from './routes/communicationsRoutes.js';
 import assembliesRoutes from './routes/assembliesRoutes.js';
 import documentsRoutes from './routes/documentsRoutes.js';
+import employeesRoutes from './routes/employeesRoutes.js';
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use('/api/suppliers', suppliersRoutes);
 app.use('/api/communications', communicationsRoutes);
 app.use('/api/assemblies', assembliesRoutes);
 app.use('/api/documents', documentsRoutes);
+app.use('/api/employees', employeesRoutes);
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {

@@ -71,6 +71,12 @@ export function Assemblies() {
     };
 
     const errors = validateForm(formData, rules);
+    
+    const quorum = parseFloat(formData.expected_quorum);
+    if (isNaN(quorum) || quorum < 0 || quorum > 100) {
+      errors.expected_quorum = 'El quórum debe estar entre 0 y 100%';
+    }
+
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       return;
@@ -166,6 +172,7 @@ export function Assemblies() {
                       name="expected_quorum"
                       value={formData.expected_quorum}
                       onChange={handleChange}
+                      error={validationErrors.expected_quorum}
                       min="0"
                       max="100"
                     />

@@ -10,7 +10,15 @@ export async function register(req, res) {
     const { username, email, password, firstName, lastName, role = 'resident' } = req.body;
 
     if (!username || !email || !password) {
-      return res.status(400).json({ error: 'Faltan campos requeridos' });
+      return res.status(400).json({ error: 'Faltan campos requeridos (Usuario, Email o Contraseña)' });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Formato de correo electrónico inválido' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
 
     const db = await getDatabase();
@@ -18,7 +26,7 @@ export async function register(req, res) {
     // Verificar si usuario ya existe
     const existing = await db.get('SELECT id FROM users WHERE username = ? OR email = ?', [username, email]);
     if (existing) {
-      return res.status(409).json({ error: 'Usuario o email ya existe' });
+      return res.status(409).json({ error: 'El nombre de usuario o correo electrónico ya está registrado' });
     }
 
     // Hash de contraseña

@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
 import unitsService from '../services/unitsService';
 import residentsService from '../services/residentsService';
+import { validateForm } from '../utils/validation';
 
 export function Units() {
   const [units, setUnits] = useState([]);
@@ -10,6 +11,7 @@ export function Units() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const [formData, setFormData] = useState({
     unitNumber: '',
     unitType: 'departamento',
@@ -56,6 +58,19 @@ export function Units() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setValidationErrors({});
+
+    const rules = {
+      unitNumber: { required: true },
+      aliquot: { required: true, type: 'currency' },
+      area: { type: 'currency' }
+    };
+
+    const errors = validateForm(formData, rules);
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
 
     try {
       await unitsService.createUnit(formData);
@@ -68,6 +83,7 @@ export function Units() {
         status: 'ocupado',
         ownerId: ''
       });
+      setValidationErrors({});
       setShowForm(false);
       loadUnits();
     } catch (err) {
@@ -79,7 +95,7 @@ export function Units() {
     <div className="container py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Gestión de Unidades</h1>
-        <Button onClick={() => setShowForm(!showForm)}>
+        <Button onClick={() => { setShowForm(!showForm); setValidationErrors({}); }}>
           <Plus size={20} className="mr-2" />
           Nueva Unidad
         </Button>
@@ -97,6 +113,7 @@ export function Units() {
                 name="unitNumber"
                 value={formData.unitNumber}
                 onChange={handleChange}
+                error={validationErrors.unitNumber}
                 required
               />
               <Select
@@ -122,6 +139,7 @@ export function Units() {
                 name="area"
                 value={formData.area}
                 onChange={handleChange}
+                error={validationErrors.area}
                 step="0.01"
               />
               <Input
@@ -130,6 +148,7 @@ export function Units() {
                 name="aliquot"
                 value={formData.aliquot}
                 onChange={handleChange}
+                error={validationErrors.aliquot}
                 step="0.0001"
                 required
               />
@@ -159,7 +178,7 @@ export function Units() {
             </div>
             <div className="flex gap-2 mt-4">
               <Button type="submit">Guardar</Button>
-              <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
+              <Button type="button" variant="secondary" onClick={() => { setShowForm(false); setValidationErrors({}); }}>
                 Cancelar
               </Button>
             </div>

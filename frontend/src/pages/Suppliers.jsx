@@ -12,12 +12,14 @@ export function Suppliers() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState('suppliers');
   const [formData, setFormData] = useState({
-    name: '',
+    businessName: '',
+    ruc: '',
     email: '',
     phone: '',
-    category: 'servicios',
     address: '',
-    contact_person: ''
+    city: '',
+    contactPerson: '',
+    paymentTerms: ''
   });
   const [validationErrors, setValidationErrors] = useState({});
 
@@ -66,10 +68,10 @@ export function Suppliers() {
     setValidationErrors({});
 
     const rules = {
-      name: { required: true, minLength: 3 },
+      businessName: { required: true, minLength: 3 },
+      ruc: { required: true, minLength: 10, maxLength: 13 },
       email: { type: 'email' },
-      phone: { type: 'phone' },
-      category: { required: true }
+      phone: { type: 'phone' }
     };
 
     const errors = validateForm(formData, rules);
@@ -81,13 +83,16 @@ export function Suppliers() {
     try {
       await suppliersService.createSupplier(formData);
       setFormData({
-        name: '',
+        businessName: '',
+        ruc: '',
         email: '',
         phone: '',
-        category: 'servicios',
         address: '',
-        contact_person: ''
+        city: '',
+        contactPerson: '',
+        paymentTerms: ''
       });
+      setValidationErrors({});
       setShowForm(false);
       loadSuppliers();
     } catch (err) {
@@ -152,11 +157,19 @@ export function Suppliers() {
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Nombre"
-                    name="name"
-                    value={formData.name}
+                    label="Nombre / Razón Social"
+                    name="businessName"
+                    value={formData.businessName}
                     onChange={handleChange}
-                    error={validationErrors.name}
+                    error={validationErrors.businessName}
+                    required
+                  />
+                  <Input
+                    label="RUC"
+                    name="ruc"
+                    value={formData.ruc}
+                    onChange={handleChange}
+                    error={validationErrors.ruc}
                     required
                   />
                   <Input
@@ -174,18 +187,12 @@ export function Suppliers() {
                     onChange={handleChange}
                     error={validationErrors.phone}
                   />
-                  <Select
-                    label="Categoría"
-                    name="category"
-                    value={formData.category}
+                  <Input
+                    label="Persona de Contacto"
+                    name="contactPerson"
+                    value={formData.contactPerson}
                     onChange={handleChange}
-                  >
-                    <option value="servicios">Servicios</option>
-                    <option value="materiales">Materiales</option>
-                    <option value="mantenimiento">Mantenimiento</option>
-                    <option value="seguridad">Seguridad</option>
-                    <option value="limpieza">Limpieza</option>
-                  </Select>
+                  />
                   <Input
                     label="Dirección"
                     name="address"
@@ -193,15 +200,22 @@ export function Suppliers() {
                     onChange={handleChange}
                   />
                   <Input
-                    label="Persona de Contacto"
-                    name="contact_person"
-                    value={formData.contact_person}
+                    label="Ciudad"
+                    name="city"
+                    value={formData.city}
                     onChange={handleChange}
+                  />
+                  <Input
+                    label="Términos de Pago"
+                    name="paymentTerms"
+                    value={formData.paymentTerms}
+                    onChange={handleChange}
+                    placeholder="Ej: 30 días"
                   />
                 </div>
                 <div className="flex gap-2 mt-4">
                   <Button type="submit">Guardar</Button>
-                  <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
+                  <Button type="button" variant="secondary" onClick={() => { setShowForm(false); setValidationErrors({}); }}>
                     Cancelar
                   </Button>
                 </div>
@@ -212,13 +226,13 @@ export function Suppliers() {
           <Card>
             <h2 className="text-lg font-bold mb-4">Proveedores</h2>
             <Table
-              columns={['Nombre', 'Categoría', 'Email', 'Teléfono', 'Contacto', 'Acciones']}
+              columns={['Nombre', 'RUC', 'Contacto', 'Email', 'Teléfono', 'Acciones']}
               data={suppliers.map((s) => ({
-                Nombre: s.name,
-                Categoría: s.category,
+                Nombre: s.business_name,
+                RUC: s.ruc || '-',
+                Contacto: s.contact_person || '-',
                 Email: s.email || '-',
                 Teléfono: s.phone || '-',
-                Contacto: s.contact_person || '-',
                 Acciones: (
                   <div className="flex gap-2">
                     <button className="text-green-600 hover:text-green-800">

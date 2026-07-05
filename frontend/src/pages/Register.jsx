@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Button, Input, Alert, Select } from '../components/UI';
+import { validateForm } from '../utils/validation';
 
 export function Register() {
   const [formData, setFormData] = useState({
@@ -14,6 +15,7 @@ export function Register() {
     role: 'resident'
   });
   const [error, setError] = useState('');
+  const [validationErrors, setValidationErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -28,6 +30,19 @@ export function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setValidationErrors({});
+
+    const rules = {
+      username: { required: true, minLength: 3 },
+      email: { required: true, type: 'email' },
+      password: { required: true, minLength: 6 }
+    };
+
+    const errors = validateForm(formData, rules);
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError('Las contraseñas no coinciden');
@@ -69,6 +84,7 @@ export function Register() {
             name="username"
             value={formData.username}
             onChange={handleChange}
+            error={validationErrors.username}
             required
             data-cy="register-username"
           />
@@ -79,6 +95,7 @@ export function Register() {
             name="email"
             value={formData.email}
             onChange={handleChange}
+            error={validationErrors.email}
             required
             data-cy="register-email"
           />
@@ -107,6 +124,7 @@ export function Register() {
             name="password"
             value={formData.password}
             onChange={handleChange}
+            error={validationErrors.password}
             required
             data-cy="register-password"
           />

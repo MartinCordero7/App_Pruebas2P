@@ -4,6 +4,7 @@ import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
 import residentsService from '../services/residentsService';
 import documentsService from '../services/documentsService';
 import unitsService from '../services/unitsService';
+import { validateForm } from '../utils/validation';
 
 export function Residents() {
   const [residents, setResidents] = useState([]);
@@ -15,6 +16,7 @@ export function Residents() {
   const [residentDocuments, setResidentDocuments] = useState([]);
   const [residentBalance, setResidentBalance] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [validationErrors, setValidationErrors] = useState({});
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -69,6 +71,21 @@ export function Residents() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setValidationErrors({});
+
+    const rules = {
+      firstName: { required: true, minLength: 2 },
+      lastName: { required: true, minLength: 2 },
+      email: { type: 'email' },
+      phone: { type: 'phone' },
+      idNumber: { required: true, minLength: 5 }
+    };
+
+    const errors = validateForm(formData, rules);
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
     
     try {
       await residentsService.createResident(formData);
@@ -80,6 +97,7 @@ export function Residents() {
         idNumber: '',
         relationship: 'residente'
       });
+      setValidationErrors({});
       setShowForm(false);
       loadResidents();
     } catch (err) {
@@ -178,6 +196,7 @@ export function Residents() {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
+                    error={validationErrors.firstName}
                     required
                   />
                   <Input
@@ -185,6 +204,7 @@ export function Residents() {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
+                    error={validationErrors.lastName}
                     required
                   />
                   <Input
@@ -193,18 +213,21 @@ export function Residents() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    error={validationErrors.email}
                   />
                   <Input
                     label="Teléfono"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    error={validationErrors.phone}
                   />
                   <Input
                     label="Número de Identificación"
                     name="idNumber"
                     value={formData.idNumber}
                     onChange={handleChange}
+                    error={validationErrors.idNumber}
                     required
                   />
                   <Select
@@ -220,7 +243,7 @@ export function Residents() {
                 </div>
                 <div className="flex gap-2 mt-4">
                   <Button type="submit">Guardar</Button>
-                  <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
+                  <Button type="button" variant="secondary" onClick={() => { setShowForm(false); setValidationErrors({}); }}>
                     Cancelar
                   </Button>
                 </div>
@@ -230,7 +253,7 @@ export function Residents() {
 
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold">Residentes</h1>
-            <Button variant="primary" onClick={() => setShowForm(!showForm)}>
+            <Button variant="primary" onClick={() => { setShowForm(!showForm); setValidationErrors({}); }}>
               <Plus size={20} className="mr-2" />
               Nuevo Residente
             </Button>

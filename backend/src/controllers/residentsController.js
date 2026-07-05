@@ -6,7 +6,15 @@ export async function createResident(req, res) {
     const { firstName, lastName, email, phone, idNumber, idType, relationship, address, city, state, postalCode, userId } = req.body;
 
     if (!firstName || !lastName || !idNumber) {
-      return res.status(400).json({ error: 'Faltan campos requeridos' });
+      return res.status(400).json({ error: 'Faltan campos requeridos (Nombre, Apellido o Identificación)' });
+    }
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Formato de correo electrónico inválido' });
+    }
+
+    if (phone && !/^\d{7,15}$/.test(phone.replace(/\D/g, ''))) {
+      return res.status(400).json({ error: 'Formato de teléfono inválido (debe tener entre 7 y 15 dígitos)' });
     }
 
     const db = await getDatabase();
@@ -81,18 +89,37 @@ export async function updateResident(req, res) {
     const { id } = req.params;
     const { firstName, lastName, email, phone, idNumber, idType, relationship, address, city, state, postalCode } = req.body;
 
+    if (!firstName || !lastName || !idNumber) {
+      return res.status(400).json({ error: 'Faltan campos requeridos (Nombre, Apellido o Identificación)' });
+    }
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Formato de correo electrónico inválido' });
+    }
+
+    if (phone && !/^\d{7,15}$/.test(phone.replace(/\D/g, ''))) {
+      return res.status(400).json({ error: 'Formato de teléfono inválido (debe tener entre 7 y 15 dígitos)' });
+    }
+
     const db = await getDatabase();
 
-    await db.run(
+    const result = await db.run(
       `UPDATE residents 
        SET first_name = ?, last_name = ?, email = ?, phone = ?, id_number = ?, id_type = ?, relationship = ?, address = ?, city = ?, state = ?, postal_code = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [firstName, lastName, email, phone, idNumber, idType, relationship, address, city, state, postalCode, id]
     );
 
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Residente no encontrado' });
+    }
+
     res.json({ success: true, message: 'Residente actualizado' });
   } catch (error) {
     console.error('Error actualizando residente:', error);
+    if (error.message.includes('UNIQUE constraint failed')) {
+      return res.status(409).json({ error: 'El número de identificación ya está en uso por otro residente' });
+    }
     res.status(500).json({ error: 'Error actualizando residente' });
   }
 }

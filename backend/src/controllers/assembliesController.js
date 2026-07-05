@@ -9,13 +9,18 @@ export async function createAssembly(req, res) {
       return res.status(400).json({ error: 'Fecha de asamblea requerida' });
     }
 
+    const numericQuorum = parseFloat(quorumRequired);
+    if (quorumRequired !== undefined && (isNaN(numericQuorum) || numericQuorum < 0 || numericQuorum > 100)) {
+      return res.status(400).json({ error: 'El quórum requerido debe ser un porcentaje entre 0 y 100' });
+    }
+
     const db = await getDatabase();
     const assemblyId = uuidv4();
 
     await db.run(
       `INSERT INTO assemblies (id, assembly_date, assembly_type, called_by, description, order_of_business, quorum_required, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, 'convocada')`,
-      [assemblyId, assemblyDate, assemblyType || 'ordinaria', req.user.id, description || null, orderOfBusiness || null, quorumRequired || 50]
+      [assemblyId, assemblyDate, assemblyType || 'ordinaria', req.user.id, description || null, orderOfBusiness || null, isNaN(numericQuorum) ? 50 : numericQuorum]
     );
 
     res.status(201).json({ success: true, id: assemblyId });

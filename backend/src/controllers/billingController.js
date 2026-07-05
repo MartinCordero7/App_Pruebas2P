@@ -5,18 +5,30 @@ export async function createBilling(req, res) {
   try {
     const { unitId, amount, type, description, dueDate } = req.body;
 
-    if (!unitId || !amount || !type) {
-      return res.status(400).json({ error: 'Faltan campos requeridos' });
+    if (!unitId || amount === undefined || amount === null || !type) {
+      return res.status(400).json({ error: 'Faltan campos requeridos (Unidad, Monto o Tipo)' });
+    }
+
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount < 0) {
+      return res.status(400).json({ error: 'El monto debe ser un número positivo' });
     }
 
     const db = await getDatabase();
+
+    // Validar si la unidad existe
+    const unit = await db.get('SELECT id FROM units WHERE id = ?', [unitId]);
+    if (!unit) {
+      return res.status(404).json({ error: 'La unidad especificada no existe' });
+    }
+
     const billingId = uuidv4();
     const billingDate = new Date().toISOString();
 
     await db.run(
       `INSERT INTO billing (id, unit_id, billing_date, due_date, amount, type, description, paid, interest_amount)
        VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)`,
-      [billingId, unitId, billingDate, dueDate || new Date(Date.now() + 30*24*60*60*1000).toISOString(), amount, type, description || null]
+      [billingId, unitId, billingDate, dueDate || new Date(Date.now() + 30*24*60*60*1000).toISOString(), numericAmount, type, description || null]
     );
 
     res.status(201).json({ success: true, id: billingId });

@@ -9,6 +9,14 @@ export async function uploadDocument(req, res) {
       return res.status(400).json({ error: 'Título y tipo de documento requeridos' });
     }
 
+    if (relatedEntityType === 'resident' && !relatedEntityId) {
+      return res.status(400).json({ error: 'Debe seleccionar un residente para este documento' });
+    }
+
+    if (relatedEntityType === 'unit' && !relatedEntityId) {
+      return res.status(400).json({ error: 'Debe seleccionar una unidad para este documento' });
+    }
+
     const db = await getDatabase();
     const docId = uuidv4();
 

@@ -6,10 +6,29 @@ export async function createSupplier(req, res) {
     const { businessName, contactPerson, email, phone, address, city, ruc, paymentTerms } = req.body;
 
     if (!businessName || !ruc) {
-      return res.status(400).json({ error: 'Faltan campos requeridos' });
+      return res.status(400).json({ error: 'Faltan campos requeridos (Nombre/Razón Social o RUC)' });
+    }
+
+    if (!/^\d{10}(\d{3})?$/.test(ruc)) {
+      return res.status(400).json({ error: 'Formato de RUC inválido (debe ser numérico de 10 o 13 dígitos)' });
+    }
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Formato de correo electrónico inválido' });
+    }
+
+    if (phone && !/^\d{7,15}$/.test(phone.replace(/\D/g, ''))) {
+      return res.status(400).json({ error: 'Formato de teléfono inválido (debe tener entre 7 y 15 dígitos)' });
     }
 
     const db = await getDatabase();
+
+    // Validar RUC duplicado programáticamente
+    const existingSupplier = await db.get('SELECT id FROM suppliers WHERE ruc = ?', [ruc]);
+    if (existingSupplier) {
+      return res.status(409).json({ error: 'El RUC ya está registrado para otro proveedor' });
+    }
+
     const supplierId = uuidv4();
 
     await db.run(
@@ -21,6 +40,9 @@ export async function createSupplier(req, res) {
     res.status(201).json({ success: true, id: supplierId });
   } catch (error) {
     console.error('Error creando proveedor:', error);
+    if (error.message.includes('UNIQUE constraint failed')) {
+      return res.status(409).json({ error: 'El RUC ya está registrado para otro proveedor' });
+    }
     res.status(500).json({ error: 'Error creando proveedor' });
   }
 }
