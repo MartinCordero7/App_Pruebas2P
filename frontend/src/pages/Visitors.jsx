@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Clock } from 'lucide-react';
 import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
+import visitorsService from '../services/visitorsService';
 import { validateForm } from '../utils/validation';
 
 export function Visitors() {
@@ -16,6 +17,22 @@ export function Visitors() {
     entry_time: new Date().toISOString().slice(0, 16)
   });
   const [validationErrors, setValidationErrors] = useState({});
+
+  useEffect(() => {
+    loadVisitors();
+  }, []);
+
+  const loadVisitors = async () => {
+    try {
+      setLoading(true);
+      const data = await visitorsService.getVisitors();
+      setVisitors(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Error cargando visitantes');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -41,7 +58,13 @@ export function Visitors() {
       return;
     }
 
-    setVisitors([...visitors, { ...formData, id: Date.now() }]);
+    try {
+      await visitorsService.createVisitor(formData);
+      loadVisitors();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error registrando visitante');
+      return;
+    }
     setFormData({
       visitor_name: '',
       visitor_phone: '',
@@ -53,13 +76,16 @@ export function Visitors() {
   };
 
   const handleCheckOut = (id) => {
-    setVisitors(visitors.map(v =>
-      v.id === id ? { ...v, exit_time: new Date().toISOString() } : v
-    ));
+    visitorsService.checkOutVisitor(id).then(loadVisitors).catch(() => setError('Error registrando salida'));
   };
 
-  const handleDelete = (id) => {
-    setVisitors(visitors.filter(v => v.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      await visitorsService.deleteVisitor(id);
+      loadVisitors();
+    } catch (err) {
+      setError('Error eliminando visitante');
+    }
   };
 
   const activeVisitors = visitors.filter(v => !v.exit_time).length;

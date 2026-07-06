@@ -1,135 +1,14 @@
 # Administración de Condominios - Aplicación Web
 
-Sistema completo de administración de condominios y edificios bajo el régimen de propiedad horizontal.
+Frontend React conectado a una API Spring Boot compartida por web, móvil y escritorio.
 
-## Características Principales
+## Stack Actual
 
-### 1. Gestión de Copropietarios y Residentes
-- Registro de propietarios, arrendatarios y residentes
-- Gestión de datos de contacto
-- Historial de unidades/departamentos
-- Almacenamiento de documentos (escrituras, contratos, cédulas)
-- Estado de cuenta individual
-- Asignación de parqueaderos y bodegas
+- **Frontend**: React, Vite, React Router, Axios, Tailwind CSS, Recharts, Lucide React.
+- **Backend**: Spring Boot, Spring Security, JWT, PostgreSQL.
+- **Contrato de API**: `/api/v1/...` con respuestas envueltas en `ApiResponse`.
 
-### 2. Gestión de Unidades Inmobiliarias
-- Registro de casas, departamentos, locales, oficinas
-- Cálculo de metraje y alícuotas
-- Estados de ocupación
-- Relación con propietarios
-
-### 3. Cobranza y Cartera
-- Generación automática de cuotas mensuales
-- Expensas ordinarias y extraordinarias
-- Cálculo de intereses por mora
-- Convenios de pago
-- Reportes de morosos
-- Recibos y comprobantes
-
-### 4. Contabilidad y Finanzas
-- Registro de ingresos y egresos
-- Caja chica y bancos
-- Presupuestos anuales
-- Balance general y estado de resultados
-- Flujo de caja
-- Reportes financieros
-- Exportación a Excel/PDF
-
-### 5. Gestión de Proveedores y Compras
-- Registro de proveedores
-- Cotizaciones y órdenes de compra
-- Control de facturas y pagos
-- Evaluación de proveedores
-
-### 6. Mantenimiento e Incidencias
-- Sistema de tickets de soporte
-- Seguimiento de reparaciones
-- Mantenimiento preventivo
-- Cronograma de servicios
-
-### 7. Seguridad y Accesos
-- Registro de visitantes
-- Bitácora de guardias
-- Vehículos autorizados
-- Alertas de incidentes
-
-### 8. Comunicación Interna
-- Envío de comunicados
-- Notificaciones de deuda
-- Convocatorias a asambleas
-- Circulares
-
-### 9. Asambleas y Decisiones
-- Convocatorias con orden del día
-- Registro de asistencia
-- Cálculo automático de quórum
-- Votaciones en línea
-- Actas digitales
-
-## Estructura del Proyecto
-
-```
-Aplicacion/
-├── backend/
-│   ├── src/
-│   │   ├── server.js
-│   │   ├── config/
-│   │   │   └── database.js
-│   │   ├── controllers/
-│   │   ├── routes/
-│   │   ├── middleware/
-│   │   └── utils/
-│   ├── package.json
-│   ├── .env
-│   └── .gitignore
-└── frontend/
-    ├── src/
-    │   ├── main.jsx
-    │   ├── App.jsx
-    │   ├── index.css
-    │   ├── components/
-    │   ├── pages/
-    │   ├── services/
-    │   ├── context/
-    │   ├── hooks/
-    │   └── utils/
-    ├── package.json
-    ├── vite.config.js
-    ├── tailwind.config.js
-    └── index.html
-```
-
-## Tecnologías Utilizadas
-
-### Backend
-- **Node.js** - Runtime de JavaScript
-- **Express** - Framework web
-- **SQLite** - Base de datos
-- **JWT** - Autenticación
-- **Bcrypt** - Hash de contraseñas
-
-### Frontend
-- **React** - Librería de UI
-- **Vite** - Build tool
-- **React Router** - Enrutamiento
-- **Axios** - Cliente HTTP
-- **Tailwind CSS** - Estilos
-- **Recharts** - Gráficos
-- **Lucide React** - Iconos
-
-## Instalación y Uso
-
-### Backend
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-El servidor estará disponible en `http://localhost:5000`
-
-### Frontend
+## Uso Local
 
 ```bash
 cd frontend
@@ -137,67 +16,94 @@ npm install
 npm run dev
 ```
 
-La aplicación estará disponible en `http://localhost:5173`
+La app se abre en `http://localhost:5173` y consume la API por `/api/v1`.
 
-## API Endpoints
+## Endpoints de Producción
 
 ### Autenticación
-- `POST /api/auth/register` - Registro de usuarios
-- `POST /api/auth/login` - Inicio de sesión
-- `GET /api/auth/profile` - Obtener perfil
-- `PUT /api/auth/profile` - Actualizar perfil
 
-### Residentes
-- `GET /api/residents` - Listar residentes
-- `POST /api/residents` - Crear residente
-- `GET /api/residents/:id` - Obtener residente
-- `PUT /api/residents/:id` - Actualizar residente
-- `DELETE /api/residents/:id` - Eliminar residente
-- `GET /api/residents/:id/balance` - Saldo del residente
+- `POST /api/v1/auth/login`
+- Persistencia: `usuario`, `rol`, `usuario_rol`, `permiso`.
 
-### Unidades
-- `GET /api/units` - Listar unidades
-- `POST /api/units` - Crear unidad
-- `GET /api/units/:id` - Obtener unidad
-- `PUT /api/units/:id` - Actualizar unidad
-- `DELETE /api/units/:id` - Eliminar unidad
+### Condominios e infraestructura
 
-### Cobranza
-- `GET /api/billing` - Listar facturación
-- `POST /api/billing` - Crear facturación
-- `POST /api/billing/generate-monthly` - Generar cuotas mensuales
-- `POST /api/billing/payment` - Registrar pago
-- `GET /api/billing/delinquent-report` - Reporte de morosos
+- `GET /api/v1/condominios`
+- `POST /api/v1/condominios`
+- `GET /api/v1/condominios/{id}/torres`
+- Persistencia: `condominio`, `torre`, `unidad`.
 
-### Transacciones
-- `GET /api/transactions` - Listar transacciones
-- `POST /api/transactions` - Crear transacción
-- `GET /api/transactions/report/financial` - Reporte financiero
-- `GET /api/transactions/report/cash-flow` - Flujo de caja
-- `GET /api/transactions/report/balance-sheet` - Balance general
+### Residentes y personas
 
-### Mantenimiento
-- `GET /api/maintenance` - Listar solicitudes
-- `POST /api/maintenance` - Crear solicitud
-- `PUT /api/maintenance/:id` - Actualizar solicitud
+- `POST /api/v1/residentes`
+- Persistencia: `persona`, `persona_unidad`, `unidad`.
 
-### Proveedores
-- `GET /api/suppliers` - Listar proveedores
-- `POST /api/suppliers` - Crear proveedor
-- `GET /api/suppliers/orders` - Listar órdenes de compra
-- `POST /api/suppliers/order` - Crear orden de compra
+### Tickets e incidencias
 
-### Comunicaciones
-- `GET /api/communications` - Listar comunicados
-- `POST /api/communications` - Crear comunicado
-- `POST /api/communications/:id/publish` - Publicar comunicado
+- `POST /api/v1/tickets`
+- `GET /api/v1/tickets/{id}/comentarios`
+- Persistencia: `ticket`, `historial_ticket`, `ticket_comentario`, `categoria`.
 
-### Asambleas
-- `GET /api/assemblies` - Listar asambleas
-- `POST /api/assemblies` - Crear asamblea
-- `POST /api/assemblies/vote` - Registrar voto
-- `GET /api/assemblies/:id/results` - Resultados de votación
-- `POST /api/assemblies/minutes` - Registrar acta
+### Comunicados
+
+- `POST /api/v1/comunicados`
+- Persistencia: `comunicado` y tabla de lecturas/destinatarios si aplica.
+
+### Finanzas
+
+- `GET /api/v1/cuotas`
+- `POST /api/v1/pagos`
+- Persistencia: `cuota`, `pago`, `recibo`, `multa`.
+
+## Mapa Sección por Sección
+
+Esta tabla marca, módulo por módulo, qué parte del frontend sí tiene endpoint directo, cuál debe adaptarse con otros controladores existentes y qué controladores backend deberían usarse.
+
+| Módulo Web | ¿Existe Endpoint Directo? | Adaptación Propuesta | Controladores Backend a Utilizar |
+| --- | --- | --- | --- |
+| Dashboard | ⚠️ Parcial | Construir el dashboard consumiendo varios módulos existentes (estadísticas, conteos, pagos pendientes, tickets abiertos, etc.). | `DashboardController` + `CuotaController` + `PagoController` + `TicketController` + `ComunicadoController` |
+| Finance | ❌ No | Eliminar como módulo independiente. Integrarlo dentro de **Cuotas y Pagos**. | `CuotaController` + `PagoController` |
+| Reports | ⚠️ Parcial | Generar reportes desde datos existentes sin crear nuevas tablas. | `CuotaController` + `PagoController` + `TicketController` + `ComunicadoController` |
+| Maintenance | ⚠️ Parcial | Todo mantenimiento se registra como **Ticket**. Las prioridades y categorías ya las maneja el backend. | `TicketController` + `CategoriaController` |
+| Visitors | ⚠️ Parcial | Utilizar el flujo oficial de visitantes y visitantes preautorizados. | `VisitanteController` + `VisitantePreautorizadoController` |
+| Security | ❌ No | Convertir el módulo en una vista de control de accesos utilizando visitantes y registros de acceso. | `AccesoController` + `VisitanteController` |
+| Documents | ❌ No | Mostrar documentos existentes (actas, recibos y adjuntos de tickets). No crear un gestor documental nuevo. | `ActaController` + `ReciboController` + `TicketController` |
+| Parking | ⚠️ Parcial | Administrar parqueaderos junto con los vehículos registrados. | `ParqueaderoController` + `VehiculoController` |
+| Storage | ❌ No | Representar bodegas o espacios como una extensión de las unidades o áreas comunes, sin crear un módulo nuevo. | `UnidadController` + `AreaComunController` |
+| Employees | ❌ No | Gestionar empleados como usuarios del sistema con sus respectivos roles y datos personales. | `UsuarioController` + `RolController` + `PersonaController` |
+| Suppliers | ❌ No | Igual que en Escritorio: registrar un Ticket con categoría "Proveedor" o "Contratista". | `TicketController` + `CategoriaController` |
+| Purchases | ❌ No | Registrar la compra como un Ticket (solicitud de compra) y asociar posteriormente el Pago correspondiente. | `TicketController` + `PagoController` |
+| Budget | ❌ No | Mostrar un presupuesto calculado dinámicamente a partir de cuotas, pagos y multas. No crear tablas nuevas. | `DashboardController` + `CuotaController` + `PagoController` + `MultaController` |
+
+### Lectura rápida
+
+- **Sí con endpoint directo o casi directo**: Dashboard parcial, Parking parcial, Maintenance parcial, Visitors parcial.
+- **No como módulo independiente**: Finance, Security, Documents, Storage, Employees, Suppliers, Purchases, Budget.
+- **Debe componerse desde datos existentes**: Reports, Dashboard.
+
+### Regla práctica
+
+Si un módulo del frontend no tiene un endpoint directo confirmado, no debe inventar tablas ni escritura local: debe reutilizar los controladores existentes o quedar marcado como vista compuesta.
+
+## Contrato JSON Base
+
+```json
+{
+    "success": true,
+    "timestamp": "2026-07-05T00:00:00.000",
+    "status": 200,
+    "message": "Mensaje de éxito",
+    "data": {}
+}
+```
+
+## Relación Funcional
+
+- `auth/login` habilita el resto de módulos.
+- `condominios` define la estructura principal.
+- `residentes` conecta personas con unidades.
+- `tickets` guarda incidencias y comentarios.
+- `comunicados` publica mensajes para todos los clientes.
+- `cuotas` y `pagos` comparten la misma base de producción para estado financiero.
 
 ## Cuentas de Prueba
 
@@ -209,12 +115,9 @@ Por defecto, puedes crear nuevas cuentas en el formulario de registro. Los roles
 
 ## Próximas Características
 
-- [ ] Exportación a PDF/Excel
-- [ ] Integración con WhatsApp/SMS
-- [ ] Integración con cámaras CCTV
-- [ ] App móvil
-- [ ] Pagos en línea
-- [ ] Sincronización en tiempo real
+- [ ] Mejoras de reportes y exportación
+- [ ] Más automatización financiera
+- [ ] Integración con notificaciones externas
 
 ## Incidente de Login - Resumen Corto
 
@@ -240,6 +143,32 @@ El login de la web fallaba aunque Swagger, Flutter y la app de escritorio funcio
 - Permitir `OPTIONS`.
 - Cambiar CORS a `allowedOriginPatterns(...)` o a orígenes explícitos.
 - Dejar el frontend usando `/api/v1` y el proxy local de Vite en desarrollo.
+
+## Relación de Módulos y Persistencia en Producción
+
+Con la información de la API y del flujo funcional, las secciones del sistema sí están relacionadas entre sí y deberían persistirse en tablas/colecciones separadas pero vinculadas por llaves foráneas o relaciones internas. El nombre exacto de las tablas depende del backend real, pero la relación funcional esperada es esta:
+
+| Módulo | Relación funcional | Dónde se guarda en producción |
+| --- | --- | --- |
+| Autenticación | Usuarios, roles y permisos del sistema | `users`, `roles`, `user_roles` o equivalente |
+| Condominios e infraestructura | Entidad raíz del proyecto: un condominio agrupa torres, unidades y servicios | `condominios`, `torres`, `unidades` o equivalente |
+| Residentes y personas | Persona asociada a una unidad y, opcionalmente, a un rol de propietario o residente | `personas`, `residentes`, tabla pivote con `unidades` o `propietarios` |
+| Tickets / incidencias | Caso creado por un usuario y vinculado a una categoría, prioridad y comentarios | `tickets`, `ticket_comentarios`, `ticket_categorias` |
+| Comunicados | Publicaciones dirigidas a uno o varios condominios / unidades / roles | `comunicados`, `comunicado_destinatarios` o equivalente |
+| Financiero | Cuotas generadas por unidad y pagos asociados a una cuota | `cuotas`, `pagos`, `recibos`, `movimientos_financieros` |
+
+### Verificación rápida de coherencia
+
+- `Auth` alimenta al resto del sistema porque los módulos protegidos dependen del usuario autenticado.
+- `Condominios` es la entidad padre de `torres`, `unidades`, residentes y distribución de cobros.
+- `Residentes` debe quedar amarrado a una `unidad` para que el estado de cuenta y la comunicación funcionen.
+- `Tickets` debe guardar el autor, la categoría y los comentarios para trazabilidad.
+- `Comunicados` debe poder publicarse y asociarse a un condominio, a una unidad o a un grupo de usuarios.
+- `Financiero` debe referenciar la `unidad` y la `cuota` para que los pagos cuadren con la cartera.
+
+### Observación importante
+
+No puedo confirmar los nombres físicos exactos de las tablas de producción porque el backend no está en este workspace. Esta validación es funcional y de relaciones; si el backend usa otros nombres, la estructura lógica sigue siendo la misma.
 
 ## Licencia
 

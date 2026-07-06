@@ -8,7 +8,6 @@ import { Dashboard } from './pages/Dashboard';
 import { Residents } from './pages/Residents';
 import { Units } from './pages/Units';
 import { Billing } from './pages/Billing';
-import { Finance } from './pages/Finance';
 import { Parking } from './pages/Parking';
 import { Storage } from './pages/Storage';
 import { Documents } from './pages/Documents';
@@ -52,7 +51,7 @@ function App() {
                   
                   {/* Financiero */}
                   <Route path="/billing" element={<Billing />} />
-                  <Route path="/finance" element={<Finance />} />
+                  <Route path="/finance" element={<Navigate to="/billing" replace />} />
                   <Route path="/budget" element={<Budget />} />
                   
                   {/* Operaciones */}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Download, FileText, TrendingUp, AlertCircle } from 'lucide-react';
 import { Card, Button, Select, Table, Alert } from '../components/UI';
 import billingService from '../services/billingService';
-import transactionsService from '../services/transactionsService';
+import dashboardService from '../services/dashboardService';
 import { exportToExcel, exportToPDF, generateReportHTML } from '../utils/exportUtils';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -28,10 +28,10 @@ export function Reports() {
         const data = await billingService.getDelinquentReport();
         setDelinquent(Array.isArray(data) ? data : []);
       } else if (reportType === 'financiero') {
-        const data = await transactionsService.getFinancialReport();
+        const data = await dashboardService.getFinancialSummary();
         setFinancial(data);
       } else if (reportType === 'flujo') {
-        const data = await transactionsService.getCashFlowReport();
+        const data = await dashboardService.getCashFlow();
         setCashFlow(Array.isArray(data) ? data : []);
       }
     } catch (err) {

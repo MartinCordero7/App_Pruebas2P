@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, TrendingUp } from 'lucide-react';
 import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
+import budgetService from '../services/budgetService';
 import { validateForm } from '../utils/validation';
 
 export function Budget() {
@@ -15,6 +16,51 @@ export function Budget() {
     description: ''
   });
   const [validationErrors, setValidationErrors] = useState({});
+
+  useEffect(() => {
+    loadBudgetData();
+  }, []);
+
+  const loadBudgetData = async () => {
+    try {
+      setLoading(true);
+      const [overview, cuotas, pagos, multas] = await Promise.all([
+        budgetService.getBudgetOverview(),
+        budgetService.getCuotas(),
+        budgetService.getPagos(),
+        budgetService.getMultas()
+      ]);
+
+      const mappedBudgets = Array.isArray(overview?.categories)
+        ? overview.categories
+        : [
+            {
+              id: 'cuotas',
+              category: 'Cuotas',
+              monthly_amount: overview?.monthlyIncome || cuotas?.reduce?.((sum, item) => sum + (parseFloat(item.amount) || 0), 0) || 0,
+              description: 'Ingresos por cuotas'
+            },
+            {
+              id: 'pagos',
+              category: 'Pagos',
+              monthly_amount: pagos?.reduce?.((sum, item) => sum + (parseFloat(item.amount) || 0), 0) || 0,
+              description: 'Pagos recibidos'
+            },
+            {
+              id: 'multas',
+              category: 'Multas',
+              monthly_amount: multas?.reduce?.((sum, item) => sum + (parseFloat(item.amount) || 0), 0) || 0,
+              description: 'Ingresos por multas'
+            }
+          ];
+
+      setBudgets(mappedBudgets);
+    } catch (err) {
+      setError('Error cargando presupuesto');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -59,10 +105,10 @@ export function Budget() {
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Presupuestos Anuales</h1>
+        <h1 className="text-3xl font-bold">Presupuesto Operativo</h1>
         <Button onClick={() => setShowForm(!showForm)}>
           <Plus size={20} className="mr-2" />
-          Nuevo Presupuesto
+          Nueva Proyección
         </Button>
       </div>
 
@@ -86,7 +132,7 @@ export function Budget() {
 
       {showForm && (
         <Card className="mb-8">
-          <h2 className="text-lg font-bold mb-4">Nuevo Presupuesto</h2>
+          <h2 className="text-lg font-bold mb-4">Nueva Proyección</h2>
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select

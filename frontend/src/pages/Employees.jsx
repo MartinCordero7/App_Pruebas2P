@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, Calendar } from 'lucide-react';
 import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
-import api from '../services/api';
+import employeesService from '../services/employeesService';
 import { validateForm, validatePhone } from '../utils/validation';
 
 export function Employees() {
@@ -29,8 +29,8 @@ export function Employees() {
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/employees');
-      setEmployees(Array.isArray(response.data) ? response.data : []);
+      const data = await employeesService.getEmployees();
+      setEmployees(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Error cargando empleados');
     } finally {
@@ -67,7 +67,7 @@ export function Employees() {
     }
 
     try {
-      await api.post('/employees', formData);
+      await employeesService.createEmployee(formData);
       setFormData({
         first_name: '',
         last_name: '',
@@ -88,7 +88,7 @@ export function Employees() {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro?')) {
       try {
-        await api.delete(`/employees/${id}`);
+        await employeesService.deleteEmployee(id);
         loadEmployees();
       } catch (err) {
         setError('Error eliminando empleado');

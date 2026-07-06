@@ -3,7 +3,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { DollarSign, Users, Home, AlertCircle } from 'lucide-react';
 import { Card } from '../components/UI';
 import billingService from '../services/billingService';
-import transactionsService from '../services/transactionsService';
+import dashboardService from '../services/dashboardService';
 import residentsService from '../services/residentsService';
 import unitsService from '../services/unitsService';
 
@@ -20,21 +20,22 @@ export function Dashboard() {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const [residents, units, delinquent, report] = await Promise.all([
+        const [summary, residents, units, delinquent, report] = await Promise.all([
+          dashboardService.getSummary(),
           residentsService.getResidents({}),
           unitsService.getUnits({}),
           billingService.getDelinquentReport(),
-          transactionsService.getFinancialReport({ fromDate: '2024-01-01', toDate: new Date().toISOString() })
+          dashboardService.getFinancialSummary()
         ]);
 
         setStats({
-          totalResidents: Array.isArray(residents) ? residents.length : 0,
-          totalUnits: Array.isArray(units) ? units.length : 0,
-          totalDebt: delinquent.totalDebt || 0,
-          totalIncome: report.income?.total || 0
+          totalResidents: summary?.totalResidents ?? (Array.isArray(residents) ? residents.length : 0),
+          totalUnits: summary?.totalUnits ?? (Array.isArray(units) ? units.length : 0),
+          totalDebt: delinquent.totalDebt || summary?.totalDebt || 0,
+          totalIncome: report.total_income ?? report.income?.total ?? summary?.totalIncome ?? 0
         });
 
-        setChartData([
+        setChartData(Array.isArray(report.monthly) && report.monthly.length > 0 ? report.monthly : [
           { month: 'Enero', ingresos: 5000, egresos: 3000 },
           { month: 'Febrero', ingresos: 5500, egresos: 3200 },
           { month: 'Marzo', ingresos: 6000, egresos: 3500 },

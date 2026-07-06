@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, AlertTriangle, Trash2 } from 'lucide-react';
 import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
+import securityService from '../services/securityService';
 import { validateForm } from '../utils/validation';
 
 export function Security() {
@@ -16,6 +17,22 @@ export function Security() {
     guard_name: ''
   });
   const [validationErrors, setValidationErrors] = useState({});
+
+  useEffect(() => {
+    loadIncidents();
+  }, []);
+
+  const loadIncidents = async () => {
+    try {
+      setLoading(true);
+      const data = await securityService.getAccessLog();
+      setIncidents(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Error cargando bitácora de seguridad');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -41,11 +58,13 @@ export function Security() {
       return;
     }
 
-    setIncidents([...incidents, {
-      ...formData,
-      id: Date.now(),
-      event_date: new Date().toISOString()
-    }]);
+    try {
+      await securityService.registerAccess(formData);
+      loadIncidents();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error registrando incidente');
+      return;
+    }
     setFormData({
       event_type: 'incidente',
       description: '',
@@ -56,8 +75,13 @@ export function Security() {
     setShowForm(false);
   };
 
-  const handleDelete = (id) => {
-    setIncidents(incidents.filter(i => i.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      await securityService.deleteAccess(id);
+      loadIncidents();
+    } catch (err) {
+      setError('Error eliminando incidente');
+    }
   };
 
   const criticalIncidents = incidents.filter(i => i.severity === 'critico').length;

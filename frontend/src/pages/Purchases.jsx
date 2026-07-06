@@ -1,29 +1,47 @@
-import React from 'react';
-import { Card, Alert } from '../components/UI';
+import React, { useEffect, useState } from 'react';
+import { Card, Alert, Table } from '../components/UI';
+import suppliersService from '../services/suppliersService';
 
 export function Purchases() {
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    loadPurchaseOrders();
+  }, []);
+
+  const loadPurchaseOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await suppliersService.getPurchaseOrders();
+      setPurchaseOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Error cargando solicitudes de compra');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container py-8">
       <h1 className="text-3xl font-bold mb-8">Gestión de Compras</h1>
 
       <Card>
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold mb-4">🛒 Módulo en Desarrollo</h2>
-          <p className="text-gray-600 mb-8">
-            La gestión de compras permite:
-          </p>
-          <ul className="text-left inline-block text-gray-700 space-y-2">
-            <li>✅ Crear y gestionar solicitudes de compra</li>
-            <li>✅ Comparar cotizaciones de proveedores</li>
-            <li>✅ Autorizar órdenes de compra</li>
-            <li>✅ Rastrear entregas</li>
-            <li>✅ Procesar facturas y pagos</li>
-            <li>✅ Generar reportes de gastos</li>
-          </ul>
-          <p className="text-sm text-gray-500 mt-8">
-            Este módulo se integra con la gestión de proveedores y contabilidad
-          </p>
+        <div className="mb-4 text-sm text-gray-600">
+          Las compras se registran como tickets con categoría de compra y luego se liquidan con pagos.
         </div>
+        <Table
+          columns={['Asunto', 'Estado', 'Prioridad', 'Fecha', 'Acciones']}
+          data={purchaseOrders.map((order) => ({
+            Asunto: order.title || order.subject || 'Solicitud de compra',
+            Estado: order.status || 'pendiente',
+            Prioridad: order.priority || '-',
+            Fecha: order.created_at ? new Date(order.created_at).toLocaleDateString() : '-',
+            Acciones: '-'
+          }))}
+          loading={loading}
+        />
       </Card>
     </div>
   );

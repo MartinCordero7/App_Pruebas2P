@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Send, Users } from 'lucide-react';
 import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
-import api from '../services/api';
+import communicationsService from '../services/communicationsService';
 import { validateForm, validateRequired } from '../utils/validation';
 
 export function Communications() {
@@ -33,8 +33,8 @@ export function Communications() {
   const loadCommunications = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/communications');
-      setCommunications(Array.isArray(response.data) ? response.data : []);
+      const data = await communicationsService.getCommunications();
+      setCommunications(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Error cargando comunicados');
     } finally {
@@ -45,8 +45,8 @@ export function Communications() {
   const loadVisitors = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/communications/visitors');
-      setVisitors(Array.isArray(response.data) ? response.data : []);
+      const data = await communicationsService.getVisitors();
+      setVisitors(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Error cargando visitantes');
     } finally {
@@ -57,8 +57,8 @@ export function Communications() {
   const loadSecurityLog = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/communications/security-log');
-      setSecurityLog(Array.isArray(response.data) ? response.data : []);
+      const data = await communicationsService.getSecurityLog();
+      setSecurityLog(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Error cargando bitácora');
     } finally {
@@ -91,9 +91,9 @@ export function Communications() {
 
     try {
       if (formData.status === 'publicado') {
-        await api.post('/communications/publish', formData);
+        await communicationsService.publishCommunication(formData);
       } else {
-        await api.post('/communications', formData);
+        await communicationsService.createCommunication(formData);
       }
       setFormData({
         title: '',
@@ -111,7 +111,7 @@ export function Communications() {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro?')) {
       try {
-        await api.delete(`/communications/${id}`);
+        await communicationsService.deleteCommunication(id);
         loadCommunications();
       } catch (err) {
         setError('Error eliminando comunicado');

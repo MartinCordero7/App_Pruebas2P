@@ -25,7 +25,6 @@ export function Navbar() {
       icon: '💰',
       submenu: [
         { label: 'Cobranza', path: '/billing' },
-        { label: 'Contabilidad', path: '/finance' },
         { label: 'Presupuesto', path: '/budget' }
       ]
     },
