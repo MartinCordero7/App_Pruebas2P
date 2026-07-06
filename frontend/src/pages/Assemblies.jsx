@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Users, Vote } from 'lucide-react';
 import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
-import api from '../services/api';
+import assembliesService from '../services/assembliesService';
 import { validateForm, validateRequired } from '../utils/validation';
 
 export function Assemblies() {
@@ -31,8 +31,8 @@ export function Assemblies() {
   const loadAssemblies = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/assemblies');
-      setAssemblies(Array.isArray(response.data) ? response.data : []);
+      const data = await assembliesService.getAssemblies();
+      setAssemblies(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Error cargando asambleas');
     } finally {
@@ -43,8 +43,8 @@ export function Assemblies() {
   const loadVotes = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/assemblies/votes');
-      setVotes(Array.isArray(response.data) ? response.data : []);
+      const data = await assembliesService.getVotes();
+      setVotes(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Error cargando votaciones');
     } finally {
@@ -83,7 +83,7 @@ export function Assemblies() {
     }
 
     try {
-      await api.post('/assemblies', formData);
+      await assembliesService.createAssembly(formData);
       setFormData({
         title: '',
         date: '',
@@ -100,7 +100,7 @@ export function Assemblies() {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro?')) {
       try {
-        await api.delete(`/assemblies/${id}`);
+        await assembliesService.deleteAssembly(id);
         loadAssemblies();
       } catch (err) {
         setError('Error eliminando asamblea');

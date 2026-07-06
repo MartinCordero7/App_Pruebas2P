@@ -87,7 +87,7 @@ export function Parking() {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de desasignar este parqueadero?')) {
       try {
-        // Aquí iría el DELETE cuando se implemente en el backend
+        await parkingService.deleteParkingSpace(id);
         loadParkingSpaces();
       } catch (err) {
         setError('Error eliminando asignación');

@@ -10,6 +10,11 @@ const parkingService = {
   getParkingSpaces: async () => {
     const response = await api.get(API_ROUTES.parqueaderos);
     return response.data;
+  },
+
+  deleteParkingSpace: async (id) => {
+    const response = await api.delete(`${API_ROUTES.parqueaderos}/${id}`);
+    return response.data;
   }
 };
 

@@ -21,6 +21,7 @@ export const API_ROUTES = {
   tickets: '/tickets',
   categorias: '/categorias',
   comunicados: '/comunicados',
+  assemblies: '/assemblies',
   visitantes: '/visitantes',
   visitantesPreautorizados: '/visitantes-preautorizados',
   accesos: '/accesos',

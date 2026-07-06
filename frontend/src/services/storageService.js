@@ -10,6 +10,11 @@ const storageService = {
   getStorageRooms: async () => {
     const response = await api.get(API_ROUTES.areasComunes);
     return response.data;
+  },
+
+  deleteStorageRoom: async (id) => {
+    const response = await api.delete(`${API_ROUTES.areasComunes}/${id}`);
+    return response.data;
   }
 };
 

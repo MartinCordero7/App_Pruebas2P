@@ -87,7 +87,7 @@ export function Storage() {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de desasignar esta bodega?')) {
       try {
-        // Aquí iría el DELETE cuando se implemente en el backend
+        await storageService.deleteStorageRoom(id);
         loadStorageRooms();
       } catch (err) {
         setError('Error eliminando asignación');

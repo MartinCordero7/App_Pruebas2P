@@ -115,7 +115,10 @@ export function Documents() {
       escritura: 'Escritura',
       contrato: 'Contrato',
       autorizacion: 'Autorización',
-      reglamento: 'Reglamento'
+      reglamento: 'Reglamento',
+      recibo: 'Recibo',
+      acta: 'Acta',
+      adjunto: 'Adjunto de Ticket'
     };
     return types[type] || type;
   };
