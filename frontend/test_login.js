@@ -1,22 +1,31 @@
-import axios from 'axios';
+const http = require('https');
 
-async function testLogin() {
-  try {
-    const response = await axios.post('https://condominio-api-2aef.onrender.com/api/v1/auth/login', {
-      username: 'admin',
-      password: 'password'
-    });
-    console.log('Success:', response.data);
-  } catch (err) {
-    if (err.response) {
-      console.error('Error Status:', err.response.status);
-      console.error('Error Data:', err.response.data);
-    } else {
-      console.error('Error:', err.message);
-    }
+const data = JSON.stringify({
+  username: 'admin',
+  password: 'password'
+});
+
+const options = {
+  hostname: 'condominio-api-2aef.onrender.com',
+  port: 443,
+  path: '/api/v1/auth/login',
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Content-Length': data.length
   }
-}
+};
 
-testLogin();
+const req = http.request(options, res => {
+  console.log(`statusCode: ${res.statusCode}`);
+  res.on('data', d => {
+    process.stdout.write(d);
+  });
+});
 
-testLogin();
+req.on('error', error => {
+  console.error(error);
+});
+
+req.write(data);
+req.end();

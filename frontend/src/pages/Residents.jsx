@@ -18,12 +18,16 @@ export function Residents() {
   const [searchTerm, setSearchTerm] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    idNumber: '',
-    relationship: 'residente'
+    tipoIdentificacion: 'CEDULA',
+    numeroIdentificacion: '',
+    nombres: '',
+    apellidos: '',
+    telefono: '',
+    correo: '',
+    fechaNacimiento: '1990-01-01',
+    direccion: 'Sin dirección',
+    fotoPerfil: '',
+    estado: 'ACTIVO'
   });
 
   useEffect(() => {
@@ -74,11 +78,11 @@ export function Residents() {
     setValidationErrors({});
 
     const rules = {
-      firstName: { required: true, minLength: 2 },
-      lastName: { required: true, minLength: 2 },
-      email: { type: 'email' },
-      phone: { type: 'phone' },
-      idNumber: { required: true, minLength: 5 }
+      nombres: { required: true, minLength: 2 },
+      apellidos: { required: true, minLength: 2 },
+      correo: { type: 'email' },
+      telefono: { type: 'phone' },
+      numeroIdentificacion: { required: true, minLength: 5 }
     };
 
     const errors = validateForm(formData, rules);
@@ -90,12 +94,16 @@ export function Residents() {
     try {
       await residentsService.createResident(formData);
       setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        idNumber: '',
-        relationship: 'residente'
+        tipoIdentificacion: 'CEDULA',
+        numeroIdentificacion: '',
+        nombres: '',
+        apellidos: '',
+        telefono: '',
+        correo: '',
+        fechaNacimiento: '1990-01-01',
+        direccion: 'Sin dirección',
+        fotoPerfil: '',
+        estado: 'ACTIVO'
       });
       setValidationErrors({});
       setShowForm(false);
@@ -131,7 +139,7 @@ export function Residents() {
         <Card className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">
-              {selectedResident.first_name} {selectedResident.last_name}
+              {selectedResident.nombres} {selectedResident.apellidos}
             </h2>
             <Button variant="secondary" onClick={() => setActiveTab('list')}>
               Volver
@@ -141,15 +149,15 @@ export function Residents() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-gray-50 p-4 rounded">
               <p className="text-gray-600 text-sm">Email</p>
-              <p className="font-medium">{selectedResident.email || '-'}</p>
+              <p className="font-medium">{selectedResident.correo || '-'}</p>
             </div>
             <div className="bg-gray-50 p-4 rounded">
               <p className="text-gray-600 text-sm">Teléfono</p>
-              <p className="font-medium">{selectedResident.phone || '-'}</p>
+              <p className="font-medium">{selectedResident.telefono || '-'}</p>
             </div>
             <div className="bg-gray-50 p-4 rounded">
               <p className="text-gray-600 text-sm">Cédula</p>
-              <p className="font-medium">{selectedResident.id_number}</p>
+              <p className="font-medium">{selectedResident.numeroIdentificacion}</p>
             </div>
             {residentBalance && (
               <div className="bg-red-50 p-4 rounded border-l-4 border-red-500">
@@ -192,53 +200,52 @@ export function Residents() {
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Nombre"
-                    name="firstName"
-                    value={formData.firstName}
+                    label="Nombres"
+                    name="nombres"
+                    value={formData.nombres}
                     onChange={handleChange}
-                    error={validationErrors.firstName}
+                    error={validationErrors.nombres}
                     required
                   />
                   <Input
-                    label="Apellido"
-                    name="lastName"
-                    value={formData.lastName}
+                    label="Apellidos"
+                    name="apellidos"
+                    value={formData.apellidos}
                     onChange={handleChange}
-                    error={validationErrors.lastName}
+                    error={validationErrors.apellidos}
                     required
                   />
                   <Input
                     label="Email"
                     type="email"
-                    name="email"
-                    value={formData.email}
+                    name="correo"
+                    value={formData.correo}
                     onChange={handleChange}
-                    error={validationErrors.email}
+                    error={validationErrors.correo}
                   />
                   <Input
                     label="Teléfono"
-                    name="phone"
-                    value={formData.phone}
+                    name="telefono"
+                    value={formData.telefono}
                     onChange={handleChange}
-                    error={validationErrors.phone}
+                    error={validationErrors.telefono}
                   />
                   <Input
                     label="Número de Identificación"
-                    name="idNumber"
-                    value={formData.idNumber}
+                    name="numeroIdentificacion"
+                    value={formData.numeroIdentificacion}
                     onChange={handleChange}
-                    error={validationErrors.idNumber}
+                    error={validationErrors.numeroIdentificacion}
                     required
                   />
                   <Select
-                    label="Relación"
-                    name="relationship"
-                    value={formData.relationship}
+                    label="Tipo Identificación"
+                    name="tipoIdentificacion"
+                    value={formData.tipoIdentificacion}
                     onChange={handleChange}
                   >
-                    <option value="residente">Residente</option>
-                    <option value="propietario">Propietario</option>
-                    <option value="arrendatario">Arrendatario</option>
+                    <option value="CEDULA">Cédula</option>
+                    <option value="PASAPORTE">Pasaporte</option>
                   </Select>
                 </div>
                 <div className="flex gap-2 mt-4">
@@ -270,13 +277,13 @@ export function Residents() {
             </div>
 
             <Table
-              columns={['Nombre', 'Email', 'Teléfono', 'Cédula', 'Tipo', 'Acciones']}
+              columns={['Nombre', 'Email', 'Teléfono', 'Cédula', 'Estado', 'Acciones']}
               data={residents.map((r) => ({
-                Nombre: `${r.first_name} ${r.last_name}`,
-                Email: r.email || '-',
-                Teléfono: r.phone || '-',
-                Cédula: r.id_number,
-                Tipo: r.relationship,
+                Nombre: `${r.nombres} ${r.apellidos}`,
+                Email: r.correo || '-',
+                Teléfono: r.telefono || '-',
+                Cédula: r.numeroIdentificacion,
+                Estado: r.estado,
                 Acciones: (
                   <div className="flex gap-2">
                     <button

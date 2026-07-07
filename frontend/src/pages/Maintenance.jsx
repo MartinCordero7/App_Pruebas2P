@@ -11,11 +11,11 @@ export function Maintenance() {
   const [showForm, setShowForm] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    type: 'reparacion',
-    priority: 'normal',
-    unitId: ''
+    titulo: '',
+    descripcion: '',
+    categoriaId: 1,
+    prioridad: 'NORMAL',
+    estadoActualId: 1
   });
   const [validationErrors, setValidationErrors] = useState({});
 
@@ -49,10 +49,10 @@ export function Maintenance() {
     setValidationErrors({});
 
     const rules = {
-      title: { required: true, minLength: 5 },
-      description: { required: true, minLength: 10 },
-      type: { required: true },
-      priority: { required: true }
+      titulo: { required: true, minLength: 5 },
+      descripcion: { required: true, minLength: 10 },
+      categoriaId: { required: true },
+      prioridad: { required: true }
     };
 
     const errors = validateForm(formData, rules);
@@ -64,11 +64,11 @@ export function Maintenance() {
     try {
       await maintenanceService.createRequest(formData);
       setFormData({
-        title: '',
-        description: '',
-        type: 'reparacion',
-        priority: 'normal',
-        unitId: ''
+        titulo: '',
+        descripcion: '',
+        categoriaId: 1,
+        prioridad: 'NORMAL',
+        estadoActualId: 1
       });
       setShowForm(false);
       loadRequests();
@@ -162,49 +162,49 @@ export function Maintenance() {
               <div>
                 <Input
                   label="Título"
-                  name="title"
-                  value={formData.title}
+                  name="titulo"
+                  value={formData.titulo}
                   onChange={handleChange}
                   placeholder="Ej: Reparar grieta en pared"
-                  error={validationErrors.title}
+                  error={validationErrors.titulo}
                   required
                 />
               </div>
               <Select
                 label="Tipo"
-                name="type"
-                value={formData.type}
+                name="categoriaId"
+                value={formData.categoriaId}
                 onChange={handleChange}
               >
-                <option value="reparacion">Reparación</option>
-                <option value="preventivo">Preventivo</option>
-                <option value="urgencia">Urgencia</option>
-                <option value="limpieza">Limpieza</option>
+                <option value="1">Reparación</option>
+                <option value="2">Preventivo</option>
+                <option value="3">Urgencia</option>
+                <option value="4">Limpieza</option>
               </Select>
               <Select
                 label="Prioridad"
-                name="priority"
-                value={formData.priority}
+                name="prioridad"
+                value={formData.prioridad}
                 onChange={handleChange}
               >
-                <option value="bajo">Bajo</option>
-                <option value="normal">Normal</option>
-                <option value="alto">Alto</option>
-                <option value="urgente">Urgente</option>
+                <option value="BAJA">Bajo</option>
+                <option value="NORMAL">Normal</option>
+                <option value="ALTA">Alto</option>
+                <option value="URGENTE">Urgente</option>
               </Select>
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium mb-2">Descripción</label>
               <textarea
-                name="description"
-                value={formData.description}
+                name="descripcion"
+                value={formData.descripcion}
                 onChange={handleChange}
                 placeholder="Detalles del problema..."
                 rows="4"
                 className="w-full border rounded px-3 py-2"
               />
-              {validationErrors.description && (
-                <p className="text-red-600 text-sm mt-1">{validationErrors.description}</p>
+              {validationErrors.descripcion && (
+                <p className="text-red-600 text-sm mt-1">{validationErrors.descripcion}</p>
               )}
             </div>
             <div className="flex gap-2 mt-4">
@@ -241,12 +241,12 @@ export function Maintenance() {
         <Table
           columns={['Título', 'Tipo', 'Prioridad', 'Estado', 'Acciones']}
           data={requests.map((r) => ({
-            Título: r.title,
-            Tipo: r.type,
-            Prioridad: <span className={getPriorityColor(r.priority)}>{r.priority}</span>,
+            Título: r.titulo,
+            Tipo: r.categoriaNombre,
+            Prioridad: <span className={getPriorityColor(r.prioridad)}>{r.prioridad}</span>,
             Estado: (
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(r.status)}`}>
-                {r.status.replace('_', ' ')}
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(r.estado)}`}>
+                {r.estado ? r.estado.replace('_', ' ') : ''}
               </span>
             ),
             Acciones: (

@@ -13,13 +13,13 @@ export function Units() {
   const [showForm, setShowForm] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [formData, setFormData] = useState({
-    unitNumber: '',
-    unitType: 'departamento',
-    floor: '',
-    area: '',
-    aliquot: '',
-    status: 'ocupado',
-    ownerId: ''
+    condominioId: 1,
+    torreId: 1,
+    estadoId: 1,
+    numero: '',
+    piso: '',
+    tipo: 'DEPARTAMENTO',
+    alicuota: ''
   });
 
   useEffect(() => {
@@ -61,9 +61,8 @@ export function Units() {
     setValidationErrors({});
 
     const rules = {
-      unitNumber: { required: true },
-      aliquot: { required: true, type: 'currency' },
-      area: { type: 'currency' }
+      numero: { required: true },
+      alicuota: { required: true, type: 'currency' }
     };
 
     const errors = validateForm(formData, rules);
@@ -75,13 +74,13 @@ export function Units() {
     try {
       await unitsService.createUnit(formData);
       setFormData({
-        unitNumber: '',
-        unitType: 'departamento',
-        floor: '',
-        area: '',
-        aliquot: '',
-        status: 'ocupado',
-        ownerId: ''
+        condominioId: 1,
+        torreId: 1,
+        estadoId: 1,
+        numero: '',
+        piso: '',
+        tipo: 'DEPARTAMENTO',
+        alicuota: ''
       });
       setValidationErrors({});
       setShowForm(false);
@@ -110,70 +109,48 @@ export function Units() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Número de Unidad"
-                name="unitNumber"
-                value={formData.unitNumber}
+                name="numero"
+                value={formData.numero}
                 onChange={handleChange}
-                error={validationErrors.unitNumber}
+                error={validationErrors.numero}
                 required
               />
               <Select
                 label="Tipo"
-                name="unitType"
-                value={formData.unitType}
+                name="tipo"
+                value={formData.tipo}
                 onChange={handleChange}
               >
-                <option value="departamento">Departamento</option>
-                <option value="casa">Casa</option>
-                <option value="local">Local</option>
-                <option value="oficina">Oficina</option>
+                <option value="DEPARTAMENTO">Departamento</option>
+                <option value="CASA">Casa</option>
+                <option value="LOCAL">Local</option>
+                <option value="OFICINA">Oficina</option>
               </Select>
               <Input
                 label="Piso"
-                name="floor"
-                value={formData.floor}
+                name="piso"
+                value={formData.piso}
                 onChange={handleChange}
-              />
-              <Input
-                label="Área (m²)"
-                type="number"
-                name="area"
-                value={formData.area}
-                onChange={handleChange}
-                error={validationErrors.area}
-                step="0.01"
               />
               <Input
                 label="Alícuota"
                 type="number"
-                name="aliquot"
-                value={formData.aliquot}
+                name="alicuota"
+                value={formData.alicuota}
                 onChange={handleChange}
-                error={validationErrors.aliquot}
+                error={validationErrors.alicuota}
                 step="0.0001"
                 required
               />
               <Select
-                label="Propietario"
-                name="ownerId"
-                value={formData.ownerId}
-                onChange={handleChange}
-              >
-                <option value="">Seleccionar...</option>
-                {residents.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.first_name} {r.last_name}
-                  </option>
-                ))}
-              </Select>
-              <Select
                 label="Estado"
-                name="status"
-                value={formData.status}
+                name="estadoId"
+                value={formData.estadoId}
                 onChange={handleChange}
               >
-                <option value="ocupado">Ocupado</option>
-                <option value="vacio">Vacío</option>
-                <option value="alquilado">Alquilado</option>
+                <option value="1">Habitado</option>
+                <option value="2">Deshabitado</option>
+                <option value="3">Alquilado</option>
               </Select>
             </div>
             <div className="flex gap-2 mt-4">
@@ -188,15 +165,13 @@ export function Units() {
 
       <Card>
         <Table
-          columns={['Unidad', 'Tipo', 'Piso', 'Área', 'Alícuota', 'Estado', 'Propietario', 'Acciones']}
+          columns={['Unidad', 'Tipo', 'Piso', 'Alícuota', 'Estado', 'Acciones']}
           data={units.map((u) => ({
-            Unidad: u.unit_number,
-            Tipo: u.unit_type,
-            Piso: u.floor || '-',
-            Área: u.area ? `${u.area} m²` : '-',
-            Alícuota: (u.aliquot * 100).toFixed(2) + '%',
-            Estado: u.status,
-            Propietario: u.first_name ? `${u.first_name} ${u.last_name}` : '-',
+            Unidad: u.numero,
+            Tipo: u.tipo,
+            Piso: u.piso || '-',
+            Alícuota: u.alicuota ? (u.alicuota * 100).toFixed(2) + '%' : '-',
+            Estado: u.estadoNombre,
             Acciones: (
               <div className="flex gap-2">
                 <button className="text-blue-600 hover:text-blue-800">

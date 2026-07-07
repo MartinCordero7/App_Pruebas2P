@@ -13,10 +13,11 @@ export function Communications() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState('communications');
   const [formData, setFormData] = useState({
-    title: '',
-    message: '',
-    type: 'general',
-    status: 'borrador'
+    titulo: '',
+    mensaje: '',
+    autorId: 1,
+    destinatarioTipo: 'TODOS',
+    destinatarioId: null
   });
   const [validationErrors, setValidationErrors] = useState({});
 
@@ -79,8 +80,8 @@ export function Communications() {
     setValidationErrors({});
 
     const rules = {
-      title: { required: true, minLength: 5 },
-      message: { required: true, minLength: 10 }
+      titulo: { required: true, minLength: 5 },
+      mensaje: { required: true, minLength: 10 }
     };
 
     const errors = validateForm(formData, rules);
@@ -90,16 +91,13 @@ export function Communications() {
     }
 
     try {
-      if (formData.status === 'publicado') {
-        await communicationsService.publishCommunication(formData);
-      } else {
-        await communicationsService.createCommunication(formData);
-      }
+      await communicationsService.createCommunication(formData);
       setFormData({
-        title: '',
-        message: '',
-        type: 'general',
-        status: 'borrador'
+        titulo: '',
+        mensaje: '',
+        autorId: 1,
+        destinatarioTipo: 'TODOS',
+        destinatarioId: null
       });
       setShowForm(false);
       loadCommunications();
@@ -161,53 +159,42 @@ export function Communications() {
                 <div className="space-y-4">
                   <Input
                     label="Título"
-                    name="title"
-                    value={formData.title}
+                    name="titulo"
+                    value={formData.titulo}
                     onChange={handleChange}
                     placeholder="Asunto del comunicado"
-                    error={validationErrors.title}
+                    error={validationErrors.titulo}
                     required
                   />
                   <Select
-                    label="Tipo"
-                    name="type"
-                    value={formData.type}
+                    label="Destinatario"
+                    name="destinatarioTipo"
+                    value={formData.destinatarioTipo}
                     onChange={handleChange}
                   >
-                    <option value="general">General</option>
-                    <option value="deuda">Notificación de Deuda</option>
-                    <option value="asamblea">Convocatoria a Asamblea</option>
-                    <option value="circula">Circular</option>
-                    <option value="urgente">Urgente</option>
+                    <option value="TODOS">Todos</option>
+                    <option value="PROPIETARIOS">Propietarios</option>
+                    <option value="RESIDENTES">Residentes</option>
                   </Select>
                   <div>
                     <label className="block text-sm font-medium mb-2">Mensaje</label>
                     <textarea
-                      name="message"
-                      value={formData.message}
+                      name="mensaje"
+                      value={formData.mensaje}
                       onChange={handleChange}
                       placeholder="Contenido del comunicado..."
                       rows="6"
                       className="w-full border rounded px-3 py-2"
                     />
-                    {validationErrors.message && (
-                      <p className="text-red-600 text-sm mt-1">{validationErrors.message}</p>
+                    {validationErrors.mensaje && (
+                      <p className="text-red-600 text-sm mt-1">{validationErrors.mensaje}</p>
                     )}
                   </div>
-                  <Select
-                    label="Enviar como"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                  >
-                    <option value="borrador">Borrador</option>
-                    <option value="publicado">Publicar Ahora</option>
-                  </Select>
                 </div>
                 <div className="flex gap-2 mt-4">
                   <Button type="submit">
                     <Send size={18} className="mr-2" />
-                    {formData.status === 'publicado' ? 'Publicar' : 'Guardar'}
+                    Enviar
                   </Button>
                   <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
                     Cancelar
@@ -220,20 +207,12 @@ export function Communications() {
           <Card>
             <h2 className="text-lg font-bold mb-4">Comunicados</h2>
             <Table
-              columns={['Título', 'Tipo', 'Fecha', 'Estado', 'Acciones']}
+              columns={['Título', 'Destinatario', 'Fecha', 'Autor', 'Acciones']}
               data={communications.map((c) => ({
-                Título: c.title,
-                Tipo: c.type,
-                Fecha: new Date(c.created_at).toLocaleDateString(),
-                Estado: (
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    c.status === 'publicado'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {c.status}
-                  </span>
-                ),
+                Título: c.titulo,
+                Destinatario: c.destinatarioTipo,
+                Fecha: c.fecha ? new Date(c.fecha).toLocaleDateString() : '-',
+                Autor: c.autorNombres ? `${c.autorNombres} ${c.autorApellidos}` : '-',
                 Acciones: (
                   <button
                     className="text-red-600 hover:text-red-800"
