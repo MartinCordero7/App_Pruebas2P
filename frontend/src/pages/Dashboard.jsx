@@ -20,7 +20,7 @@ export function Dashboard() {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const [summary, residents, units, delinquent, report] = await Promise.all([
+        const results = await Promise.allSettled([
           dashboardService.getSummary(),
           residentsService.getResidents({}),
           unitsService.getUnits({}),
@@ -28,14 +28,26 @@ export function Dashboard() {
           dashboardService.getFinancialSummary()
         ]);
 
+        const summary = results[0].status === 'fulfilled' ? results[0].value : null;
+        const residents = results[1].status === 'fulfilled' ? results[1].value : null;
+        const units = results[2].status === 'fulfilled' ? results[2].value : null;
+        const delinquent = results[3].status === 'fulfilled' ? results[3].value : null;
+        const report = results[4].status === 'fulfilled' ? results[4].value : null;
+
+        const summaryData = summary?.data || summary || {};
+        const residentsList = residents?.data?.content || residents?.content || (Array.isArray(residents) ? residents : []);
+        const unitsList = units?.data?.content || units?.content || (Array.isArray(units) ? units : []);
+        const delinquentData = delinquent?.data || delinquent || {};
+        const reportData = report?.data || report || {};
+
         setStats({
-          totalResidents: summary?.totalResidents ?? (Array.isArray(residents) ? residents.length : 0),
-          totalUnits: summary?.totalUnits ?? (Array.isArray(units) ? units.length : 0),
-          totalDebt: delinquent.totalDebt || summary?.totalDebt || 0,
-          totalIncome: report.total_income ?? report.income?.total ?? summary?.totalIncome ?? 0
+          totalResidents: summaryData.totalResidents || residentsList.length,
+          totalUnits: summaryData.totalUnits || unitsList.length,
+          totalDebt: delinquentData.totalDebt || summaryData.totalDebt || 0,
+          totalIncome: reportData.total_income ?? reportData.income?.total ?? summaryData.totalIncome ?? 0
         });
 
-        setChartData(Array.isArray(report.monthly) && report.monthly.length > 0 ? report.monthly : [
+        setChartData(Array.isArray(reportData.monthly) && reportData.monthly.length > 0 ? reportData.monthly : [
           { month: 'Enero', ingresos: 5000, egresos: 3000 },
           { month: 'Febrero', ingresos: 5500, egresos: 3200 },
           { month: 'Marzo', ingresos: 6000, egresos: 3500 },
@@ -49,6 +61,12 @@ export function Dashboard() {
     };
 
     loadDashboardData();
+
+    const interval = setInterval(() => {
+      loadDashboardData();
+    }, 15000);
+
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

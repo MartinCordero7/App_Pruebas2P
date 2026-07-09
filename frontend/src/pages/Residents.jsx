@@ -12,12 +12,13 @@ export function Residents() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [selectedResident, setSelectedResident] = useState(null);
+  const [editingId, setEditingId] = useState(null);
   const [activeTab, setActiveTab] = useState('list');
   const [residentDocuments, setResidentDocuments] = useState([]);
   const [residentBalance, setResidentBalance] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
-  const [formData, setFormData] = useState({
+  const defaultFormData = {
     tipoIdentificacion: 'CEDULA',
     numeroIdentificacion: '',
     nombres: '',
@@ -25,20 +26,28 @@ export function Residents() {
     telefono: '',
     correo: '',
     fechaNacimiento: '1990-01-01',
-    direccion: 'Sin dirección',
+    direccion: '',
     fotoPerfil: '',
     estado: 'ACTIVO'
-  });
+  };
+  const [formData, setFormData] = useState(defaultFormData);
 
   useEffect(() => {
     loadResidents();
+
+    const interval = setInterval(() => {
+      loadResidents();
+    }, 15000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadResidents = async () => {
     try {
       setLoading(true);
-      const data = await residentsService.getResidents({ search: searchTerm });
-      setResidents(Array.isArray(data) ? data : []);
+      const responseData = await residentsService.getResidents({ search: searchTerm });
+      const items = responseData?.data?.content || responseData?.content || (Array.isArray(responseData) ? responseData : []);
+      setResidents(items);
       setError('');
     } catch (err) {
       setError('Error cargando residentes');
@@ -72,6 +81,24 @@ export function Residents() {
     });
   };
 
+  const handleEdit = (resident) => {
+    setFormData({
+      tipoIdentificacion: resident.tipoIdentificacion || 'CEDULA',
+      numeroIdentificacion: resident.numeroIdentificacion || '',
+      nombres: resident.nombres || '',
+      apellidos: resident.apellidos || '',
+      telefono: resident.telefono || '',
+      correo: resident.correo || '',
+      fechaNacimiento: resident.fechaNacimiento || '1990-01-01',
+      direccion: resident.direccion || '',
+      fotoPerfil: resident.fotoPerfil || '',
+      estado: resident.estado || 'ACTIVO'
+    });
+    setValidationErrors({});
+    setError('');
+    setShowForm(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -90,26 +117,34 @@ export function Residents() {
       setValidationErrors(errors);
       return;
     }
-    
     try {
-      await residentsService.createResident(formData);
-      setFormData({
-        tipoIdentificacion: 'CEDULA',
-        numeroIdentificacion: '',
-        nombres: '',
-        apellidos: '',
-        telefono: '',
-        correo: '',
-        fechaNacimiento: '1990-01-01',
-        direccion: 'Sin dirección',
-        fotoPerfil: '',
-        estado: 'ACTIVO'
-      });
+      if (editingId) {
+        await residentsService.updateResident(editingId, formData);
+      } else {
+        await residentsService.createResident(formData);
+      }
+      setFormData(defaultFormData);
       setValidationErrors({});
+      setEditingId(null);
       setShowForm(false);
       loadResidents();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error creando residente');
+      if (err.response?.status === 400) {
+        const errorData = err.response?.data;
+        let errorMsg = 'Error de validación';
+        if (errorData?.errors) {
+          errorMsg = Object.values(errorData.errors).join(', ');
+        } else if (errorData?.message) {
+          errorMsg = errorData.message;
+        } else if (typeof errorData === 'string') {
+          errorMsg = errorData;
+        } else {
+          errorMsg = JSON.stringify(errorData);
+        }
+        setError(errorMsg);
+      } else {
+        setError(err.response?.data?.error || 'Error guardando residente');
+      }
     }
   };
 
@@ -196,7 +231,7 @@ export function Residents() {
         <>
           {showForm && (
             <Card className="mb-8">
-              <h2 className="text-lg font-bold mb-4">Crear Residente</h2>
+              <h2 className="text-lg font-bold mb-4">{editingId ? 'Editar Residente' : 'Crear Residente'}</h2>
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
@@ -246,11 +281,37 @@ export function Residents() {
                   >
                     <option value="CEDULA">Cédula</option>
                     <option value="PASAPORTE">Pasaporte</option>
+                    <option value="RUC">RUC</option>
+                  </Select>
+                  <Input
+                    label="Fecha de Nacimiento"
+                    type="date"
+                    name="fechaNacimiento"
+                    value={formData.fechaNacimiento}
+                    onChange={handleChange}
+                    error={validationErrors.fechaNacimiento}
+                    required
+                  />
+                  <Input
+                    label="Dirección"
+                    name="direccion"
+                    value={formData.direccion}
+                    onChange={handleChange}
+                    error={validationErrors.direccion}
+                  />
+                  <Select
+                    label="Estado"
+                    name="estado"
+                    value={formData.estado}
+                    onChange={handleChange}
+                  >
+                    <option value="ACTIVO">Activo</option>
+                    <option value="INACTIVO">Inactivo</option>
                   </Select>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <Button type="submit">Guardar</Button>
-                  <Button type="button" variant="secondary" onClick={() => { setShowForm(false); setValidationErrors({}); }}>
+                  <Button type="submit">{editingId ? 'Actualizar' : 'Guardar'}</Button>
+                  <Button type="button" variant="secondary" onClick={() => { setShowForm(false); setEditingId(null); setFormData(defaultFormData); setValidationErrors({}); }}>
                     Cancelar
                   </Button>
                 </div>
@@ -260,7 +321,7 @@ export function Residents() {
 
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold">Residentes</h1>
-            <Button variant="primary" onClick={() => { setShowForm(!showForm); setValidationErrors({}); }}>
+            <Button variant="primary" onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData(defaultFormData); setValidationErrors({}); }}>
               <Plus size={20} className="mr-2" />
               Nuevo Residente
             </Button>
@@ -293,7 +354,11 @@ export function Residents() {
                     >
                       <Home size={18} />
                     </button>
-                    <button className="text-green-600 hover:text-green-800">
+                    <button
+                      className="text-green-600 hover:text-green-800"
+                      onClick={() => handleEdit(r)}
+                      title="Editar"
+                    >
                       <Edit2 size={18} />
                     </button>
                     <button
