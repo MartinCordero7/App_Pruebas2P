@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, DollarSign } from 'lucide-react';
+import { Plus, DollarSign } from 'lucide-react';
 import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
 import billingService from '../services/billingService';
 import unitsService from '../services/unitsService';
 import { validateForm } from '../utils/validation';
+
+// Campos según API_CONTRACT.md y tabla cuota del schema
+const DEFAULT_FORM = {
+  unidadId: '',
+  mes: new Date().getMonth() + 1,
+  anio: new Date().getFullYear(),
+  valor: '',
+  tipo: 'ORDINARIA',
+  descripcion: '',
+  fechaVencimiento: ''
+};
 
 export function Billing() {
   const [billing, setBilling] = useState([]);
@@ -13,29 +24,34 @@ export function Billing() {
   const [activeTab, setActiveTab] = useState('billing');
   const [showForm, setShowForm] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const [formData, setFormData] = useState({
-    unitId: '',
-    amount: '',
-    type: 'ordinaria',
-    description: '',
-    dueDate: ''
-  });
+  const [formData, setFormData] = useState(DEFAULT_FORM);
   const [units, setUnits] = useState([]);
 
   useEffect(() => {
     loadBillingData();
     loadUnits();
+
+    const interval = setInterval(() => loadBillingData(), 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadBillingData = async () => {
     try {
       setLoading(true);
-      const [billingData, delinquentData] = await Promise.all([
-        billingService.getBilling({ paid: 'false' }),
+      const results = await Promise.allSettled([
+        billingService.getBilling({}),
         billingService.getDelinquentReport()
       ]);
-      setBilling(Array.isArray(billingData) ? billingData : []);
-      setDelinquent(delinquentData.delinquent || []);
+
+      const billingResp = results[0].status === 'fulfilled' ? results[0].value : null;
+      const delinquentResp = results[1].status === 'fulfilled' ? results[1].value : null;
+
+      // Desempaquetar wrapper: { data: { content: [...] } }
+      const billingList = billingResp?.data?.content || billingResp?.content || (Array.isArray(billingResp) ? billingResp : []);
+      const delinquentList = delinquentResp?.data?.content || delinquentResp?.delinquent || (Array.isArray(delinquentResp) ? delinquentResp : []);
+
+      setBilling(billingList);
+      setDelinquent(delinquentList);
     } catch (err) {
       setError('Error cargando datos de cobranza');
     } finally {
@@ -45,18 +61,16 @@ export function Billing() {
 
   const loadUnits = async () => {
     try {
-      const data = await unitsService.getUnits({});
-      setUnits(Array.isArray(data) ? data : []);
+      const response = await unitsService.getUnits({});
+      const list = response?.data?.content || response?.content || (Array.isArray(response) ? response : []);
+      setUnits(list);
     } catch (err) {
       console.error('Error cargando unidades');
     }
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -65,8 +79,11 @@ export function Billing() {
     setValidationErrors({});
 
     const rules = {
-      unitId: { required: true },
-      amount: { required: true, type: 'currency' }
+      unidadId: { required: true },
+      valor: { required: true, type: 'currency' },
+      fechaVencimiento: { required: true },
+      mes: { required: true },
+      anio: { required: true }
     };
 
     const errors = validateForm(formData, rules);
@@ -75,20 +92,29 @@ export function Billing() {
       return;
     }
 
+    // Payload plano según API_CONTRACT.md y schema (NOT NULL: unidadId, mes, anio, valor, tipo, fechaVencimiento)
+    const payload = {
+      unidadId: Number(formData.unidadId),
+      mes: Number(formData.mes),
+      anio: Number(formData.anio),
+      valor: parseFloat(formData.valor),
+      tipo: formData.tipo,                        // ENUM: ORDINARIA | EXTRAORDINARIA | MULTA | FONDO_RESERVA
+      descripcion: formData.descripcion || null,
+      fechaVencimiento: formData.fechaVencimiento // ISO date: YYYY-MM-DD
+    };
+
     try {
-      await billingService.createBilling(formData);
-      setFormData({
-        unitId: '',
-        amount: '',
-        type: 'ordinaria',
-        description: '',
-        dueDate: ''
-      });
+      await billingService.createBilling(payload);
+      setFormData(DEFAULT_FORM);
       setValidationErrors({});
       setShowForm(false);
       loadBillingData();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error creando facturación');
+      const errData = err.response?.data;
+      const msg = errData?.errors?.map(e => `${e.campo}: ${e.message}`).join(' | ')
+        || errData?.message
+        || 'Error creando cuota';
+      setError(msg);
     }
   };
 
@@ -109,19 +135,15 @@ export function Billing() {
         <button
           onClick={() => setActiveTab('billing')}
           className={`px-4 py-2 rounded-lg font-medium ${
-            activeTab === 'billing'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-800'
+            activeTab === 'billing' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
           }`}
         >
-          Facturación
+          Cuotas Pendientes
         </button>
         <button
           onClick={() => setActiveTab('delinquent')}
           className={`px-4 py-2 rounded-lg font-medium ${
-            activeTab === 'delinquent'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-800'
+            activeTab === 'delinquent' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
           }`}
         >
           Morosos ({delinquent.length})
@@ -135,49 +157,76 @@ export function Billing() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
                 label="Unidad"
-                name="unitId"
-                value={formData.unitId}
+                name="unidadId"
+                value={formData.unidadId}
                 onChange={handleChange}
-                error={validationErrors.unitId}
+                error={validationErrors.unidadId}
                 required
               >
                 <option value="">Seleccionar unidad...</option>
                 {units.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.unit_number} {u.first_name ? `- (Propietario: ${u.first_name} ${u.last_name})` : ''}
+                    {u.numero} {u.condominioNombre ? `— ${u.condominioNombre}` : ''}
                   </option>
                 ))}
               </Select>
               <Input
-                label="Monto"
+                label="Valor ($)"
                 type="number"
-                name="amount"
-                value={formData.amount}
+                name="valor"
+                value={formData.valor}
                 onChange={handleChange}
-                error={validationErrors.amount}
+                error={validationErrors.valor}
                 step="0.01"
+                min="0.01"
                 required
               />
               <Select
-                label="Tipo"
-                name="type"
-                value={formData.type}
+                label="Tipo de Cuota"
+                name="tipo"
+                value={formData.tipo}
                 onChange={handleChange}
               >
-                <option value="ordinaria">Ordinaria</option>
-                <option value="extraordinaria">Extraordinaria</option>
+                <option value="ORDINARIA">Ordinaria</option>
+                <option value="EXTRAORDINARIA">Extraordinaria</option>
+                <option value="MULTA">Multa</option>
+                <option value="FONDO_RESERVA">Fondo de Reserva</option>
               </Select>
               <Input
                 label="Fecha de Vencimiento"
                 type="date"
-                name="dueDate"
-                value={formData.dueDate}
+                name="fechaVencimiento"
+                value={formData.fechaVencimiento}
                 onChange={handleChange}
+                error={validationErrors.fechaVencimiento}
+                required
               />
               <Input
-                label="Descripción"
-                name="description"
-                value={formData.description}
+                label="Mes (1-12)"
+                type="number"
+                name="mes"
+                value={formData.mes}
+                onChange={handleChange}
+                error={validationErrors.mes}
+                min="1"
+                max="12"
+                required
+              />
+              <Input
+                label="Año"
+                type="number"
+                name="anio"
+                value={formData.anio}
+                onChange={handleChange}
+                error={validationErrors.anio}
+                min="2020"
+                max="2100"
+                required
+              />
+              <Input
+                label="Descripción (opcional)"
+                name="descripcion"
+                value={formData.descripcion}
                 onChange={handleChange}
               />
             </div>
@@ -193,21 +242,16 @@ export function Billing() {
 
       {activeTab === 'billing' && (
         <Card>
-          <h2 className="text-lg font-bold mb-4">Facturas Pendientes</h2>
+          <h2 className="text-lg font-bold mb-4">Cuotas Pendientes</h2>
           <Table
-            columns={['Unidad', 'Monto', 'Vencimiento', 'Interés', 'Acciones']}
+            columns={['Unidad', 'Tipo', 'Valor', 'Mes/Año', 'Vencimiento', 'Estado']}
             data={billing.map((b) => ({
-              Unidad: b.unit_number,
-              Monto: `$${parseFloat(b.amount).toFixed(2)}`,
-              Vencimiento: new Date(b.due_date).toLocaleDateString(),
-              Interés: `$${(b.interest_amount || 0).toFixed(2)}`,
-              Acciones: (
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline">
-                    <DollarSign size={18} /> Pagar
-                  </Button>
-                </div>
-              )
+              Unidad: b.unidadNumero || b.numero || '-',
+              Tipo: b.tipo || '-',
+              Valor: `$${parseFloat(b.valor || 0).toFixed(2)}`,
+              'Mes/Año': b.mes && b.anio ? `${b.mes}/${b.anio}` : '-',
+              Vencimiento: b.fechaVencimiento ? new Date(b.fechaVencimiento).toLocaleDateString() : '-',
+              Estado: b.estado || '-'
             }))}
             loading={loading}
           />
@@ -218,13 +262,12 @@ export function Billing() {
         <Card>
           <h2 className="text-lg font-bold mb-4">Residentes Morosos</h2>
           <Table
-            columns={['Unidad', 'Residente', 'Deuda Total', 'Facturas Vencidas', 'Email']}
+            columns={['Unidad', 'Monto Vencido', 'Cuotas Vencidas', 'Saldo Pendiente']}
             data={delinquent.map((d) => ({
-              Unidad: d.unit_number,
-              Residente: `${d.first_name} ${d.last_name}`,
-              'Deuda Total': `$${parseFloat(d.total_debt).toFixed(2)}`,
-              'Facturas Vencidas': d.pending_bills,
-              Email: d.email || '-'
+              Unidad: d.unidadNumero || d.numero || '-',
+              'Monto Vencido': `$${parseFloat(d.montoCuotasVencidas || d.totalDebt || 0).toFixed(2)}`,
+              'Cuotas Vencidas': d.cuotasVencidas ?? d.pending_bills ?? '-',
+              'Saldo Pendiente': d.saldoPendienteTotal != null ? `$${parseFloat(d.saldoPendienteTotal).toFixed(2)}` : '-'
             }))}
             loading={loading}
           />

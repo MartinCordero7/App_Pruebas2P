@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Send, Users } from 'lucide-react';
+import { Plus, Trash2, Send } from 'lucide-react';
 import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
 import communicationsService from '../services/communicationsService';
-import { validateForm, validateRequired } from '../utils/validation';
+import visitorsService from '../services/visitorsService';
+import { validateForm } from '../utils/validation';
+
+// Según schema comunicado: titulo NOT NULL, mensaje NOT NULL, id_autor NOT NULL,
+// destinatario_tipo ENUM(TODOS|TORRE|UNIDAD|ROL) NOT NULL
+// API_CONTRACT.md: { titulo, mensaje, autorId, destinatarioTipo, destinatarioId }
+const DEFAULT_FORM = {
+  titulo: '',
+  mensaje: '',
+  autorId: 1,
+  destinatarioTipo: 'TODOS',
+  destinatarioId: null
+};
 
 export function Communications() {
   const [communications, setCommunications] = useState([]);
@@ -12,13 +24,7 @@ export function Communications() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState('communications');
-  const [formData, setFormData] = useState({
-    titulo: '',
-    mensaje: '',
-    autorId: 1,
-    destinatarioTipo: 'TODOS',
-    destinatarioId: null
-  });
+  const [formData, setFormData] = useState(DEFAULT_FORM);
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
@@ -34,8 +40,9 @@ export function Communications() {
   const loadCommunications = async () => {
     try {
       setLoading(true);
-      const data = await communicationsService.getCommunications();
-      setCommunications(Array.isArray(data) ? data : []);
+      const response = await communicationsService.getCommunications();
+      const list = response?.data?.content || response?.content || (Array.isArray(response) ? response : []);
+      setCommunications(list);
     } catch (err) {
       setError('Error cargando comunicados');
     } finally {
@@ -46,8 +53,9 @@ export function Communications() {
   const loadVisitors = async () => {
     try {
       setLoading(true);
-      const data = await communicationsService.getVisitors();
-      setVisitors(Array.isArray(data) ? data : []);
+      const response = await visitorsService.getVisitors();
+      const list = response?.data?.content || response?.content || (Array.isArray(response) ? response : []);
+      setVisitors(list);
     } catch (err) {
       setError('Error cargando visitantes');
     } finally {
@@ -58,8 +66,10 @@ export function Communications() {
   const loadSecurityLog = async () => {
     try {
       setLoading(true);
-      const data = await communicationsService.getSecurityLog();
-      setSecurityLog(Array.isArray(data) ? data : []);
+      const response = await communicationsService.getSecurityLog();
+      // accesos: { data: { content: [...] } }
+      const list = response?.data?.content || response?.content || (Array.isArray(response) ? response : []);
+      setSecurityLog(list);
     } catch (err) {
       setError('Error cargando bitácora');
     } finally {
@@ -68,9 +78,10 @@ export function Communications() {
   };
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: name === 'destinatarioId' ? (value ? Number(value) : null) : value
     });
   };
 
@@ -90,30 +101,36 @@ export function Communications() {
       return;
     }
 
+    // Payload plano según API_CONTRACT.md
+    const payload = {
+      titulo: formData.titulo,
+      mensaje: formData.mensaje,
+      autorId: Number(formData.autorId),
+      destinatarioTipo: formData.destinatarioTipo,  // ENUM: TODOS | TORRE | UNIDAD | ROL
+      destinatarioId: formData.destinatarioId ? Number(formData.destinatarioId) : null
+    };
+
     try {
-      await communicationsService.createCommunication(formData);
-      setFormData({
-        titulo: '',
-        mensaje: '',
-        autorId: 1,
-        destinatarioTipo: 'TODOS',
-        destinatarioId: null
-      });
+      await communicationsService.createCommunication(payload);
+      setFormData(DEFAULT_FORM);
       setShowForm(false);
       loadCommunications();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error enviando comunicado');
+      const errData = err.response?.data;
+      const msg = errData?.errors?.map(e => `${e.campo}: ${e.message}`).join(' | ')
+        || errData?.message
+        || 'Error enviando comunicado';
+      setError(msg);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro?')) {
-      try {
-        await communicationsService.deleteCommunication(id);
-        loadCommunications();
-      } catch (err) {
-        setError('Error eliminando comunicado');
-      }
+    if (!window.confirm('¿Estás seguro?')) return;
+    try {
+      await communicationsService.deleteCommunication(id);
+      loadCommunications();
+    } catch (err) {
+      setError('Error eliminando comunicado');
     }
   };
 
@@ -145,7 +162,7 @@ export function Communications() {
           >
             {tab === 'communications' && '📢 Comunicados'}
             {tab === 'visitors' && '👥 Visitantes'}
-            {tab === 'security' && '🔒 Seguridad'}
+            {tab === 'security' && '🔒 Accesos'}
           </button>
         ))}
       </div>
@@ -167,17 +184,19 @@ export function Communications() {
                     required
                   />
                   <Select
-                    label="Destinatario"
+                    label="Tipo de Destinatario"
                     name="destinatarioTipo"
                     value={formData.destinatarioTipo}
                     onChange={handleChange}
                   >
+                    {/* ENUM exacto del schema: TODOS | TORRE | UNIDAD | ROL */}
                     <option value="TODOS">Todos</option>
-                    <option value="PROPIETARIOS">Propietarios</option>
-                    <option value="RESIDENTES">Residentes</option>
+                    <option value="TORRE">Torre específica</option>
+                    <option value="UNIDAD">Unidad específica</option>
+                    <option value="ROL">Por Rol</option>
                   </Select>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Mensaje</label>
+                    <label className="block text-sm font-medium mb-2">Mensaje *</label>
                     <textarea
                       name="mensaje"
                       value={formData.mensaje}
@@ -212,7 +231,7 @@ export function Communications() {
                 Título: c.titulo,
                 Destinatario: c.destinatarioTipo,
                 Fecha: c.fecha ? new Date(c.fecha).toLocaleDateString() : '-',
-                Autor: c.autorNombres ? `${c.autorNombres} ${c.autorApellidos}` : '-',
+                Autor: c.autorNombres ? `${c.autorNombres} ${c.autorApellidos || ''}`.trim() : '-',
                 Acciones: (
                   <button
                     className="text-red-600 hover:text-red-800"
@@ -230,16 +249,13 @@ export function Communications() {
 
       {activeTab === 'visitors' && (
         <Card>
-          <h2 className="text-lg font-bold mb-4">Registro de Visitantes</h2>
+          <h2 className="text-lg font-bold mb-4">Visitantes Registrados</h2>
           <Table
-            columns={['Nombre', 'Email', 'Teléfono', 'Unidad', 'Fecha Entrada', 'Hora Salida']}
+            columns={['Nombre', 'Cédula', 'Teléfono']}
             data={visitors.map((v) => ({
-              Nombre: v.visitor_name,
-              Email: v.visitor_email || '-',
-              Teléfono: v.visitor_phone || '-',
-              Unidad: v.unit_number || '-',
-              'Fecha Entrada': new Date(v.entry_time).toLocaleDateString(),
-              'Hora Salida': v.exit_time ? new Date(v.exit_time).toLocaleTimeString() : 'Sin salida'
+              Nombre: v.nombre,
+              Cédula: v.cedula || '-',
+              Teléfono: v.telefono || '-'
             }))}
             loading={loading}
           />
@@ -248,14 +264,15 @@ export function Communications() {
 
       {activeTab === 'security' && (
         <Card>
-          <h2 className="text-lg font-bold mb-4">Bitácora de Seguridad</h2>
+          <h2 className="text-lg font-bold mb-4">Bitácora de Accesos</h2>
           <Table
-            columns={['Tipo', 'Descripción', 'Fecha y Hora', 'Guardia']}
+            columns={['Visitante', 'Unidad', 'Hora Ingreso', 'Hora Salida', 'Estado']}
             data={securityLog.map((s) => ({
-              Tipo: s.event_type,
-              Descripción: s.description,
-              'Fecha y Hora': new Date(s.event_date).toLocaleString(),
-              Guardia: s.guard_name || '-'
+              Visitante: s.visitanteNombre || s.nombre || '-',
+              Unidad: s.unidadNombre || s.unidadNumero || '-',
+              'Hora Ingreso': s.horaIngreso ? new Date(s.horaIngreso).toLocaleString() : '-',
+              'Hora Salida': s.horaSalida ? new Date(s.horaSalida).toLocaleString() : 'Sin salida',
+              Estado: s.estadoNombre || '-'
             }))}
             loading={loading}
           />

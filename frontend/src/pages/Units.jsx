@@ -5,33 +5,41 @@ import unitsService from '../services/unitsService';
 import residentsService from '../services/residentsService';
 import { validateForm } from '../utils/validation';
 
+const DEFAULT_FORM = {
+  condominioId: 1,
+  torreId: '',
+  estadoId: 1,
+  numero: '',
+  piso: '',
+  tipo: 'DEPARTAMENTO',
+  alicuota: ''
+};
+
 export function Units() {
   const [units, setUnits] = useState([]);
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
-  const [formData, setFormData] = useState({
-    condominioId: 1,
-    torreId: 1,
-    estadoId: 1,
-    numero: '',
-    piso: '',
-    tipo: 'DEPARTAMENTO',
-    alicuota: ''
-  });
+  const [formData, setFormData] = useState(DEFAULT_FORM);
 
   useEffect(() => {
     loadUnits();
     loadResidents();
+
+    const interval = setInterval(() => loadUnits(), 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadUnits = async () => {
     try {
       setLoading(true);
-      const data = await unitsService.getUnits({});
-      setUnits(Array.isArray(data) ? data : []);
+      const response = await unitsService.getUnits({});
+      // Desempaquetar wrapper estándar: { data: { content: [...] } }
+      const list = response?.data?.content || response?.content || (Array.isArray(response) ? response : []);
+      setUnits(list);
     } catch (err) {
       setError('Error cargando unidades');
     } finally {
@@ -41,18 +49,41 @@ export function Units() {
 
   const loadResidents = async () => {
     try {
-      const data = await residentsService.getResidents({});
-      setResidents(Array.isArray(data) ? data : []);
+      const response = await residentsService.getResidents({});
+      const list = response?.data?.content || response?.content || (Array.isArray(response) ? response : []);
+      setResidents(list);
     } catch (err) {
       console.error('Error cargando residentes');
     }
   };
 
   const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleEdit = (unit) => {
     setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
+      condominioId: unit.condominioId || 1,
+      torreId: unit.torreId || '',
+      estadoId: unit.estadoId || 1,
+      numero: unit.numero || '',
+      piso: unit.piso || '',
+      tipo: unit.tipo || 'DEPARTAMENTO',
+      alicuota: unit.alicuota || ''
     });
+    setEditingId(unit.id);
+    setShowForm(true);
+    setValidationErrors({});
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Eliminar esta unidad?')) return;
+    try {
+      await unitsService.deleteUnit(id);
+      loadUnits();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error eliminando unidad');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -71,22 +102,34 @@ export function Units() {
       return;
     }
 
+    // Garantizar tipos numéricos en el payload
+    const payload = {
+      condominioId: Number(formData.condominioId),
+      torreId: formData.torreId ? Number(formData.torreId) : null,
+      estadoId: Number(formData.estadoId),
+      numero: formData.numero,
+      piso: formData.piso || null,
+      tipo: formData.tipo,
+      alicuota: parseFloat(formData.alicuota)
+    };
+
     try {
-      await unitsService.createUnit(formData);
-      setFormData({
-        condominioId: 1,
-        torreId: 1,
-        estadoId: 1,
-        numero: '',
-        piso: '',
-        tipo: 'DEPARTAMENTO',
-        alicuota: ''
-      });
+      if (editingId) {
+        await unitsService.updateUnit(editingId, payload);
+      } else {
+        await unitsService.createUnit(payload);
+      }
+      setFormData(DEFAULT_FORM);
       setValidationErrors({});
       setShowForm(false);
+      setEditingId(null);
       loadUnits();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error creando unidad');
+      const errData = err.response?.data;
+      const msg = errData?.errors?.map(e => `${e.campo}: ${e.message}`).join(' | ')
+        || errData?.message
+        || 'Error guardando unidad';
+      setError(msg);
     }
   };
 
@@ -94,7 +137,12 @@ export function Units() {
     <div className="container py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Gestión de Unidades</h1>
-        <Button onClick={() => { setShowForm(!showForm); setValidationErrors({}); }}>
+        <Button onClick={() => {
+          setShowForm(!showForm);
+          setEditingId(null);
+          setFormData(DEFAULT_FORM);
+          setValidationErrors({});
+        }}>
           <Plus size={20} className="mr-2" />
           Nueva Unidad
         </Button>
@@ -104,7 +152,7 @@ export function Units() {
 
       {showForm && (
         <Card className="mb-8">
-          <h2 className="text-lg font-bold mb-4">Crear Unidad</h2>
+          <h2 className="text-lg font-bold mb-4">{editingId ? 'Editar Unidad' : 'Crear Unidad'}</h2>
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
@@ -133,13 +181,13 @@ export function Units() {
                 onChange={handleChange}
               />
               <Input
-                label="Alícuota"
+                label="Alícuota (ej: 0.045)"
                 type="number"
                 name="alicuota"
                 value={formData.alicuota}
                 onChange={handleChange}
                 error={validationErrors.alicuota}
-                step="0.0001"
+                step="0.000001"
                 required
               />
               <Select
@@ -154,8 +202,12 @@ export function Units() {
               </Select>
             </div>
             <div className="flex gap-2 mt-4">
-              <Button type="submit">Guardar</Button>
-              <Button type="button" variant="secondary" onClick={() => { setShowForm(false); setValidationErrors({}); }}>
+              <Button type="submit">{editingId ? 'Actualizar' : 'Guardar'}</Button>
+              <Button type="button" variant="secondary" onClick={() => {
+                setShowForm(false);
+                setEditingId(null);
+                setValidationErrors({});
+              }}>
                 Cancelar
               </Button>
             </div>
@@ -170,14 +222,14 @@ export function Units() {
             Unidad: u.numero,
             Tipo: u.tipo,
             Piso: u.piso || '-',
-            Alícuota: u.alicuota ? (u.alicuota * 100).toFixed(2) + '%' : '-',
-            Estado: u.estadoNombre,
+            Alícuota: u.alicuota != null ? (parseFloat(u.alicuota) * 100).toFixed(4) + '%' : '-',
+            Estado: u.estadoNombre || '-',
             Acciones: (
               <div className="flex gap-2">
-                <button className="text-blue-600 hover:text-blue-800">
+                <button className="text-blue-600 hover:text-blue-800" onClick={() => handleEdit(u)} title="Editar">
                   <Edit2 size={18} />
                 </button>
-                <button className="text-red-600 hover:text-red-800">
+                <button className="text-red-600 hover:text-red-800" onClick={() => handleDelete(u.id)} title="Eliminar">
                   <Trash2 size={18} />
                 </button>
               </div>

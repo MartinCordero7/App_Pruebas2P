@@ -2,33 +2,49 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { Card, Button, Input, Select, Table, Alert } from '../components/UI';
 import maintenanceService from '../services/maintenanceService';
+import unitsService from '../services/unitsService';
+import residentsService from '../services/residentsService';
 import { validateForm } from '../utils/validation';
+
+// Según schema: ticket NOT NULL: id_persona, id_unidad, titulo, descripcion, prioridad (enum: BAJA|MEDIA|ALTA|URGENTE)
+// categoriaId y estadoActualId son opcionales (nullable en schema)
+const DEFAULT_FORM = {
+  personaId: '',
+  unidadId: '',
+  categoriaId: '',
+  titulo: '',
+  descripcion: '',
+  prioridad: 'MEDIA',
+  estadoActualId: 1
+};
 
 export function Maintenance() {
   const [requests, setRequests] = useState([]);
+  const [units, setUnits] = useState([]);
+  const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
-  const [formData, setFormData] = useState({
-    titulo: '',
-    descripcion: '',
-    categoriaId: 1,
-    prioridad: 'NORMAL',
-    estadoActualId: 1
-  });
+  const [formData, setFormData] = useState(DEFAULT_FORM);
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
     loadRequests();
+    loadUnits();
+    loadResidents();
+
+    const interval = setInterval(() => loadRequests(), 15000);
+    return () => clearInterval(interval);
   }, [filterStatus]);
 
   const loadRequests = async () => {
     try {
       setLoading(true);
       const params = filterStatus !== 'all' ? { status: filterStatus } : {};
-      const data = await maintenanceService.getRequests(params);
-      setRequests(Array.isArray(data) ? data : []);
+      const response = await maintenanceService.getRequests(params);
+      const list = response?.data?.content || response?.content || (Array.isArray(response) ? response : []);
+      setRequests(list);
     } catch (err) {
       setError('Error cargando solicitudes de mantenimiento');
     } finally {
@@ -36,11 +52,28 @@ export function Maintenance() {
     }
   };
 
+  const loadUnits = async () => {
+    try {
+      const response = await unitsService.getUnits({});
+      const list = response?.data?.content || response?.content || (Array.isArray(response) ? response : []);
+      setUnits(list);
+    } catch (err) {
+      console.error('Error cargando unidades');
+    }
+  };
+
+  const loadResidents = async () => {
+    try {
+      const response = await residentsService.getResidents({});
+      const list = response?.data?.content || response?.content || (Array.isArray(response) ? response : []);
+      setResidents(list);
+    } catch (err) {
+      console.error('Error cargando residentes');
+    }
+  };
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -49,9 +82,10 @@ export function Maintenance() {
     setValidationErrors({});
 
     const rules = {
+      personaId: { required: true },
+      unidadId: { required: true },
       titulo: { required: true, minLength: 5 },
       descripcion: { required: true, minLength: 10 },
-      categoriaId: { required: true },
       prioridad: { required: true }
     };
 
@@ -61,55 +95,64 @@ export function Maintenance() {
       return;
     }
 
+    // Payload plano según API_CONTRACT.md y schema
+    const payload = {
+      personaId: Number(formData.personaId),
+      unidadId: Number(formData.unidadId),
+      categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
+      estadoActualId: Number(formData.estadoActualId),
+      titulo: formData.titulo,
+      descripcion: formData.descripcion,
+      prioridad: formData.prioridad  // ENUM: BAJA | MEDIA | ALTA | URGENTE
+    };
+
     try {
-      await maintenanceService.createRequest(formData);
-      setFormData({
-        titulo: '',
-        descripcion: '',
-        categoriaId: 1,
-        prioridad: 'NORMAL',
-        estadoActualId: 1
-      });
+      await maintenanceService.createRequest(payload);
+      setFormData(DEFAULT_FORM);
       setShowForm(false);
       loadRequests();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error creando solicitud');
+      const errData = err.response?.data;
+      const msg = errData?.errors?.map(e => `${e.campo}: ${e.message}`).join(' | ')
+        || errData?.message
+        || 'Error creando solicitud';
+      setError(msg);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro?')) {
-      try {
-        await maintenanceService.updateStatus(id, 'cancelado');
-        loadRequests();
-      } catch (err) {
-        setError('Error eliminando solicitud');
-      }
+    if (!window.confirm('¿Eliminar este ticket?')) return;
+    try {
+      await maintenanceService.updateRequest(id, { estadoActualId: 3 }); // marcar como cancelado
+      loadRequests();
+    } catch (err) {
+      setError('Error actualizando ticket');
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (estado) => {
     const colors = {
-      abierto: 'bg-blue-100 text-blue-800',
-      en_progreso: 'bg-yellow-100 text-yellow-800',
-      completado: 'bg-green-100 text-green-800',
-      cancelado: 'bg-red-100 text-red-800'
+      ABIERTO: 'bg-blue-100 text-blue-800',
+      EN_PROGRESO: 'bg-yellow-100 text-yellow-800',
+      RESUELTO: 'bg-green-100 text-green-800',
+      CERRADO: 'bg-gray-100 text-gray-800',
+      CANCELADO: 'bg-red-100 text-red-800'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[estado] || 'bg-gray-100 text-gray-800';
   };
 
   const getPriorityColor = (priority) => {
     const colors = {
-      urgente: 'text-red-600 font-bold',
-      alto: 'text-orange-600 font-bold',
-      normal: 'text-blue-600',
-      bajo: 'text-green-600'
+      URGENTE: 'text-red-600 font-bold',
+      ALTA: 'text-orange-600 font-bold',
+      MEDIA: 'text-blue-600',
+      BAJA: 'text-green-600'
     };
     return colors[priority] || '';
   };
 
-  const openCount = requests.filter(r => r.status === 'abierto').length;
-  const inProgressCount = requests.filter(r => r.status === 'en_progreso').length;
+  const openCount = requests.filter(r => r.estado === 'ABIERTO').length;
+  const inProgressCount = requests.filter(r => r.estado === 'EN_PROGRESO').length;
 
   return (
     <div className="container py-8">
@@ -159,23 +202,50 @@ export function Maintenance() {
           <h2 className="text-lg font-bold mb-4">Nueva Solicitud de Mantenimiento</h2>
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Input
-                  label="Título"
-                  name="titulo"
-                  value={formData.titulo}
-                  onChange={handleChange}
-                  placeholder="Ej: Reparar grieta en pared"
-                  error={validationErrors.titulo}
-                  required
-                />
-              </div>
               <Select
-                label="Tipo"
+                label="Residente solicitante"
+                name="personaId"
+                value={formData.personaId}
+                onChange={handleChange}
+                error={validationErrors.personaId}
+                required
+              >
+                <option value="">Seleccionar residente...</option>
+                {residents.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.nombres} {r.apellidos}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                label="Unidad"
+                name="unidadId"
+                value={formData.unidadId}
+                onChange={handleChange}
+                error={validationErrors.unidadId}
+                required
+              >
+                <option value="">Seleccionar unidad...</option>
+                {units.map((u) => (
+                  <option key={u.id} value={u.id}>{u.numero}</option>
+                ))}
+              </Select>
+              <Input
+                label="Título"
+                name="titulo"
+                value={formData.titulo}
+                onChange={handleChange}
+                placeholder="Ej: Reparar grieta en pared"
+                error={validationErrors.titulo}
+                required
+              />
+              <Select
+                label="Categoría"
                 name="categoriaId"
                 value={formData.categoriaId}
                 onChange={handleChange}
               >
+                <option value="">Sin categoría</option>
                 <option value="1">Reparación</option>
                 <option value="2">Preventivo</option>
                 <option value="3">Urgencia</option>
@@ -187,14 +257,14 @@ export function Maintenance() {
                 value={formData.prioridad}
                 onChange={handleChange}
               >
-                <option value="BAJA">Bajo</option>
-                <option value="NORMAL">Normal</option>
-                <option value="ALTA">Alto</option>
+                <option value="BAJA">Baja</option>
+                <option value="MEDIA">Media</option>
+                <option value="ALTA">Alta</option>
                 <option value="URGENTE">Urgente</option>
               </Select>
             </div>
             <div className="mt-4">
-              <label className="block text-sm font-medium mb-2">Descripción</label>
+              <label className="block text-sm font-medium mb-2">Descripción *</label>
               <textarea
                 name="descripcion"
                 value={formData.descripcion}
@@ -220,7 +290,7 @@ export function Maintenance() {
       {/* Filtros */}
       <Card className="mb-8">
         <div className="flex gap-2">
-          {['all', 'abierto', 'en_progreso', 'completado'].map((status) => (
+          {['all', 'ABIERTO', 'EN_PROGRESO', 'RESUELTO', 'CERRADO'].map((status) => (
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
@@ -239,14 +309,15 @@ export function Maintenance() {
       <Card>
         <h2 className="text-lg font-bold mb-4">Tickets de Mantenimiento</h2>
         <Table
-          columns={['Título', 'Tipo', 'Prioridad', 'Estado', 'Acciones']}
+          columns={['Título', 'Residente', 'Unidad', 'Prioridad', 'Estado', 'Acciones']}
           data={requests.map((r) => ({
             Título: r.titulo,
-            Tipo: r.categoriaNombre,
+            Residente: r.creadoPor || '-',
+            Unidad: r.unidadNombre || '-',
             Prioridad: <span className={getPriorityColor(r.prioridad)}>{r.prioridad}</span>,
             Estado: (
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(r.estado)}`}>
-                {r.estado ? r.estado.replace('_', ' ') : ''}
+                {r.estado ? r.estado.replace('_', ' ') : '-'}
               </span>
             ),
             Acciones: (
