@@ -38,13 +38,23 @@ describe("Residentes", () => {
 
         cy.contains("Nuevo Residente").click();
 
-        cy.get('input[name="firstName"]').type("Juan");
-        cy.get('input[name="lastName"]').type("Pérez");
-        cy.get('input[name="email"]').type(`juan${ts}@test.com`);
-        cy.get('input[name="phone"]').type("0991234567");
-        cy.get('input[name="idNumber"]').type(`${ts}`.slice(-10));
+        cy.get('input[name="nombres"]')
+            .type("Juan");
 
-        cy.contains("Guardar").click();
+        cy.get('input[name="apellidos"]')
+            .type("Pérez");
+
+        cy.get('input[name="correo"]')
+            .type(`juan${ts}@test.com`);
+
+        cy.get('input[name="telefono"]')
+            .type("0991234567");
+
+        cy.get('input[name="numeroIdentificacion"]')
+            .type(`${ts}`.slice(-10));
+
+        cy.get('button[type="submit"]')
+            .click();
 
         cy.contains("Crear Residente")
             .should("not.exist");

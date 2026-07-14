@@ -36,9 +36,9 @@ describe("Unidades", () => {
 
         cy.contains("Nueva Unidad").click();
 
-        cy.get('input[name="unitNumber"]').should("exist");
-        cy.get('select[name="unitType"]').should("exist");
-        cy.get('input[name="aliquot"]').should("exist");
+        cy.get('input[name="numero"]').should("exist");
+        cy.get('select[name="tipo"]').should("exist");
+        cy.get('input[name="alicuota"]').should("exist");
 
     });
 
@@ -48,11 +48,13 @@ describe("Unidades", () => {
 
         cy.contains("Nueva Unidad").click();
 
-        cy.get('input[name="unitNumber"]').type(`U-${ts}`.slice(-8));
-        cy.get('input[name="aliquot"]').type("0.0500");
-        cy.get('select[name="unitType"]').select("departamento");
+        cy.get('input[name="numero"]').type(`U-${ts}`.slice(-8));
+        cy.get('select[name="tipo"]').select("DEPARTAMENTO");
+        cy.get('input[name="piso"]').type("1");
+        cy.get('input[name="alicuota"]').type("0.0500");
+        cy.get('select[name="estadoId"]').select("2");
 
-        cy.contains("Guardar").click();
+        cy.get('button[type="submit"]').click();
 
         cy.contains("Crear Unidad")
             .should("not.exist");

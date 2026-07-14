@@ -17,7 +17,7 @@ describe("Login", () => {
             .type("admin");
 
         cy.get('[data-cy="password"]')
-            .type("admin123");
+            .type("password");
 
         cy.get('[data-cy="login-btn"]')
             .click();

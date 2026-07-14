@@ -10,7 +10,7 @@
  *
  * Uso: cy.login()  /  cy.login('otroUsuario', 'otraContrasena')
  */
-Cypress.Commands.add('login', (username = 'admin', password = 'admin123') => {
+Cypress.Commands.add('login', (username = 'admin', password = 'password') => {
   cy.visit('http://localhost:5173/login');
   cy.get('[data-cy="username"]').clear().type(username);
   cy.get('[data-cy="password"]').clear().type(password);
